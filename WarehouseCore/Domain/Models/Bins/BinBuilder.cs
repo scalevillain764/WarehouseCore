@@ -1,5 +1,7 @@
 ﻿using Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Application.Bins.Responses;
+using Infrastructure.ResponsePatterns;
 
 namespace Domain.Models
 {
@@ -10,53 +12,40 @@ namespace Domain.Models
         {
             _context = context;
         }
-
-        // add new tomorrow
-
-        public async Task<List<Bin>?> GenerateNewBinsAsync(WarehouseZone zone, int startRowNumber, int rowsCount, int startSectionNumber, int sectionsCount, 
-            int startLevelNumber, int levelsCount)
+    
+        // add row
+        public async Task<Result<IReadOnlyList<BinResponse>>> AddRowAsync(Ulid ZoneId, int sections, int levels, BinTypeByCapacity type)
         {
-            var generatedBins = new List<Bin>();
+            var zone = await _context.Zones
+                .FindAsync(ZoneId);
 
-            var zoneExists = await _context.Zones
-                .AnyAsync(x => x.Id == zone.Id);
+            if (zone is null)
+                return Result<IReadOnlyList<BinResponse>>.Fail(ErrorType.NotFound, "Zone not found");
 
-            if (!zoneExists)
-                return null;
+            var lastRow = await _context.Bins
+                .Where(x => x.WarehouseZoneId == ZoneId)
+                .MaxAsync(x => (int?)x.Row);
 
-            var binsInSection = await _context.Bins
-                .Where(x => x.WarehouseZoneId == zone.Id)
-                .Where(x => x.Row == startRowNumber)
-                .Where(x => x.Section == startSectionNumber)
-                .ToListAsync();
+            int newRow = (lastRow ?? 0) + 1;
 
-            if (binsInSection.Count == 0)
+            var newBins = new List<Bin>();
+
+            for(int s = 1; s <= sections; s++)
             {
-                if (startLevelNumber != 1)
-                    return null;
-            }
-            else
-            {
-                int maxLevel = binsInSection.Max(x => x.Level);
-                int nextLevel = maxLevel + 1;
-
-                if (nextLevel != startLevelNumber)
-                    return null;
-            }
-
-            for(int r = startRowNumber; r <= startRowNumber + rowsCount - 1; r++)
-            {
-                for(int s = startSectionNumber; s <= startSectionNumber + sectionsCount - 1; s++)
+                for(int l = 1; l <= levels; l++)
                 {
-                    for(int l = startLevelNumber; l <= startLevelNumber + levelsCount - 1; l++)
-                    {
-                        string binCode = $"{zone.Code.Substring(0, 3)}-{r:D2}-{s:D2}-{l:D2}";
-                        generatedBins.Add(new Bin(binCode, r, s, l, zone.Id));
-                    }
+                    string binCode = $"{zone.Code.Substring(0, 3)}-{newRow:D2}-{s:D2}-{l:D2}";
+                    var newBin = new Bin(binCode, newRow, s, l, ZoneId, type);
+                    newBins.Add(newBin);
                 }
             }
 
-            return generatedBins;          
+            _context.AddRange(newBins);
+            await _context.SaveChangesAsync();
+
+            return Result<IReadOnlyList<BinResponse>>.Success(newBins
+                    .Select(x => new BinResponse(x))
+                        .ToList());
         }
     }
 }

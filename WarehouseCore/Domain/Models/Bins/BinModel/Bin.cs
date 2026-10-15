@@ -11,10 +11,11 @@ namespace Domain.Models
         public required int Row { get; init; }
         public required int Section { get; init; }
         public required int Level { get; init; }
+        public BinTypeByCapacity Type { get; set; }
         public bool IsOccupied { get; set; }
 
         [SetsRequiredMembers]
-        public Bin (string binCode, int row, int section, int level, Ulid warehouseZoneId)
+        public Bin (string binCode, int row, int section, int level, Ulid warehouseZoneId, BinTypeByCapacity type)
         {
             Id = Ulid.NewUlid();
             BinCode = binCode;
@@ -23,6 +24,7 @@ namespace Domain.Models
             Row = row;
             Section = section;
             Level = level;
+            Type = type;
         }
     }
 }
