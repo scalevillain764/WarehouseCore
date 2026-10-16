@@ -12,7 +12,25 @@ namespace Infrastructure
         public DbSet<Product> Products { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            builder.Entity<>
+            builder.Entity<Warehouse>()
+                .HasOne(w => w.Company)
+                .WithMany(c => c.Warehouses)
+                .HasForeignKey(w => w.CompanyId);
+
+            builder.Entity<User>()
+                .HasOne(u => u.Company)
+                .WithMany(c => c.Workers)
+                .HasForeignKey(u => u.CompanyId);
+
+            builder.Entity<WarehouseZone>()
+                .HasOne(z => z.Warehouse)
+                .WithMany(w => w.Zones)
+                .HasForeignKey(z => z.WarehouseId);
+
+            builder.Entity<Bin>()
+                .HasOne(b => b.Zone)
+                .WithMany(z => z.Bins)
+                .HasForeignKey(b => b.WarehouseZoneId);
         }
     }
 }

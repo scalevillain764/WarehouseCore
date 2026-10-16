@@ -12,6 +12,9 @@
         public Ulid CompanyId { get; set; }
         public Company? Company { get; set; } = null;
 
+        // warehouse zones
+        public IEnumerable<WarehouseZone> Zones { get; set; } = [];
+
         public Warehouse(string name, Address address, Ulid companyId)
         {
             Id = Ulid.NewUlid();

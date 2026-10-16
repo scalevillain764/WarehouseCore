@@ -13,6 +13,9 @@
         public Ulid WarehouseId { get; set; }
         public Warehouse? Warehouse { get; set; } = null!;
 
+        // bin
+        public IEnumerable<Bin> Bins { get; set; } = [];
+
         private string BuildCode()
         {
             string idString = Id.ToString();
