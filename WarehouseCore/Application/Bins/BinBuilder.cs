@@ -9,8 +9,8 @@ namespace Application.Bins
 {
     public class BinBuilder
     {
-        private readonly AppDbContext _context;
-        public BinBuilder(AppDbContext context)
+        private readonly WmsDbContext _context;
+        public BinBuilder(WmsDbContext context)
         {
             _context = context;
         }

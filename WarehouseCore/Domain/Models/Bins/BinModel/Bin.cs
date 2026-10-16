@@ -16,6 +16,7 @@ namespace Domain.Models
         public required int Level { get; init; }
         public BinTypeByCapacity Type { get; set; }
         public bool IsOccupied { get; set; }
+        public bool IsActive { get; set; }
 
         [SetsRequiredMembers]
         public Bin (string binCode, int row, int section, int level, Ulid warehouseZoneId, BinTypeByCapacity type)
@@ -28,6 +29,7 @@ namespace Domain.Models
             Section = section;
             Level = level;
             Type = type;
+            IsActive = true;
         }
     }
 }

@@ -6,6 +6,7 @@
 
         public string Name { get; set; }
         public Address Address { get; set; }
+        public bool IsActive { get; set; }
 
         // company
         public Ulid CompanyId { get; set; }
@@ -17,6 +18,7 @@
             CompanyId = companyId;
             Name = name;
             Address = address;
+            IsActive = true;
         }
     }
 }
