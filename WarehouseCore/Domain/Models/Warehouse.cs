@@ -3,14 +3,18 @@
     public class Warehouse
     {
         public Ulid Id { get; init; }
+
         public string Name { get; set; }
         public Address Address { get; set; }
 
-        // navigation properties
+        // company
+        public Ulid CompanyId { get; set; }
         public Company? Company { get; set; } = null;
 
-        public Warehouse(string name, Address address)
+        public Warehouse(string name, Address address, Ulid companyId)
         {
+            Id = Ulid.NewUlid();
+            CompanyId = companyId;
             Name = name;
             Address = address;
         }

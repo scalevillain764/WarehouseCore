@@ -6,8 +6,11 @@ namespace Domain.Models
     {
         public Ulid Id { get; init; }
         public required string BinCode { get; init; }
+
+        // warehouse zone
         public Ulid WarehouseZoneId { get; set; }
         public WarehouseZone? Zone { get; set; } = null!;
+
         public required int Row { get; init; }
         public required int Section { get; init; }
         public required int Level { get; init; }

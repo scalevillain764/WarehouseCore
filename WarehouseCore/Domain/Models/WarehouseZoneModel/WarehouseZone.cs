@@ -36,6 +36,7 @@
 
         public WarehouseZone(string name, string? description, Ulid warehouseId, WarehouseZoneType type)
         {
+            Id = Ulid.NewUlid();
             Name = name;
             Description = description;
             WarehouseId = warehouseId;

@@ -9,13 +9,15 @@
         public string PasswordHash { get; set; }
         public string RefreshTokenHash { get; set; }
         public DateTime RefreshTokenExpiresAt { get; set; }
-        
-        // navigation properties
+
+        // company
+        public Ulid CompanyId { get; set; }
         public Company? Company { get; set; } = null;
 
-        public User(string firstName, string secondName, string email, string passwordHash, string refreshTokenHash, DateTime refreshTokenExpiersAt)
+        public User(string firstName, string secondName, string email, string passwordHash, string refreshTokenHash, DateTime refreshTokenExpiersAt, Ulid companyId)
         {
             Id = Ulid.NewUlid();
+            CompanyId = companyId;
             FirstName = firstName;
             SecondName = secondName;
             Email = email;
