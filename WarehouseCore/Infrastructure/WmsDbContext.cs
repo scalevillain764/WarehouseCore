@@ -31,6 +31,16 @@ namespace Infrastructure
                 .HasOne(b => b.Zone)
                 .WithMany(z => z.Bins)
                 .HasForeignKey(b => b.WarehouseZoneId);
+
+            builder.Entity<Bin>()
+                .HasMany(b => b.Stocks)
+                .WithOne(s => s.Bin)
+                .HasForeignKey(s => s.BinId);
+
+            builder.Entity<Stock>()
+                .HasOne(s => s.Product)
+                .WithMany(p => p.Stocks)
+                .HasForeignKey(s => s.ProductId);
         }
     }
 }

@@ -14,12 +14,17 @@ namespace Domain.Models
         public bool IsActive { get; set; }
         public string? Color { get; set; }
         public required string SKU { get; init; }
+
+        // stocks
+        public ICollection<Stock> Stocks { get; set; } = [];
+        
         private string BuildSKU()
         {
-            string idString = Id.ToString();
+            string idString = Id.ToString().ToUpper();
 
-            string idPart = idString.Replace(" ", "")
-                .Substring(idString.Length - 5 ).ToUpper();
+            var idPart = idString
+                .AsSpan(idString.Length - 5, 5);
+
             string namePart = Name.Replace(" ", "")
                 .Substring(0, Math.Min(3, Name.Length)).ToUpper();
             string brandPart = Brand.Replace(" ", "")

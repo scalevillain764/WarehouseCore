@@ -18,6 +18,9 @@ namespace Domain.Models
         public bool IsOccupied { get; set; }
         public bool IsActive { get; set; }
 
+        // stock
+        public ICollection<Stock> Stocks { get; set; } = [];
+
         [SetsRequiredMembers]
         public Bin (string binCode, int row, int section, int level, Ulid warehouseZoneId, BinTypeByCapacity type)
         {

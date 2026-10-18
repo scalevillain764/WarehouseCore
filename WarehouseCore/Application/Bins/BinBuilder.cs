@@ -76,7 +76,9 @@ namespace Application.Bins
             int newLevel = (lastLevel ?? 0) + 1;
             var newBins = new List<Bin>();
 
-            string zonePrefix = zone.Code[..3];
+            var zonePrefix = zone.Code
+                .AsSpan(0, 3);
+
             for (int l = 0; l < request.levels; l++)
             {
                 int levelNumber = newLevel + l;
