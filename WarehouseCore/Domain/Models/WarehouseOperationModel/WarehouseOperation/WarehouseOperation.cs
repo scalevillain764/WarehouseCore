@@ -9,7 +9,6 @@
         public DateTime CreatedAt { get; init; }
         public DateTime? CompletedAt { get; set; } = null;
         public Ulid CreatedById { get; init; }
-
         public ICollection<WarehouseOperationItem> Items = [];
         private string GetTypePrefix(WarehouseOperationType type)
             => type switch

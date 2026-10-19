@@ -13,6 +13,7 @@ namespace Domain.Models
         public decimal WeightPerUnit { get; set; }
         public bool IsActive { get; set; }
         public string? Color { get; set; }
+        public ICollection<WarehouseOperationItem> WarehouseOperationItems { get; set; } = [];
         public required string SKU { get; init; }
 
         // stocks
