@@ -50,9 +50,7 @@ namespace Infrastructure
             builder.Entity<WarehouseOperationItem>()
                 .HasOne(woi => woi.Product)
                 .WithMany(wo => wo.WarehouseOperationItems)
-                .HasForeignKey(woi => woi.ProductId);
-
-
+                .HasForeignKey(woi => woi.ProductId);           
         }
     }
 }
