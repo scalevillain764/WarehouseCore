@@ -4,7 +4,14 @@ namespace Infrastructure
 {
     public class WmsDbContext : DbContext 
     {
-        public WmsDbContext(DbContextOptions<WmsDbContext> options) : base(options) { }
+        public WmsDbContext(DbContextOptions<WmsDbContext> options, string schemaName) : base(options) {
+
+            if (string.IsNullOrWhiteSpace(schemaName))
+                throw new ArgumentException("Schema name cannot be empty or null", nameof(schemaName));
+
+            _schemaName = schemaName;
+        }
+        private readonly string _schemaName;
         public DbSet<Bin> Bins { get; set; }
         public DbSet<WarehouseZone> Zones { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
@@ -12,6 +19,8 @@ namespace Infrastructure
         public DbSet<Product> Products { get; set; }
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            builder.HasDefaultSchema(_schemaName);
+
             builder.Entity<Warehouse>()
                 .HasOne(w => w.Company)
                 .WithMany(c => c.Warehouses)

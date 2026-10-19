@@ -7,14 +7,14 @@
         public string SecondName { get; set; }
         public string Email { get; set; }
         public string PasswordHash { get; set; }
-        public string RefreshTokenHash { get; set; }
-        public DateTime RefreshTokenExpiresAt { get; set; }
+        public string? RefreshTokenHash { get; set; }
+        public DateTime? RefreshTokenExpiresAt { get; set; }
         public UserType Type { get; set; }
         // company
         public Ulid CompanyId { get; set; }
         public Company? Company { get; set; } = null;
 
-        public User(UserType type, string firstName, string secondName, string email, string passwordHash, string refreshTokenHash, DateTime refreshTokenExpiersAt, Ulid companyId)
+        public User(UserType type, string firstName, string secondName, string email, string? passwordHash, string? refreshTokenHash, DateTime? refreshTokenExpiersAt, Ulid companyId)
         {
             Id = Ulid.NewUlid();
             CompanyId = companyId;
