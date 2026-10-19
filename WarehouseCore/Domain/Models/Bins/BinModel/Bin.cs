@@ -15,6 +15,7 @@ namespace Domain.Models
         public required int Section { get; init; }
         public required int Level { get; init; }
         public BinTypeByCapacity Type { get; set; }
+        public int CurrentWeight { get; set; }
         public bool IsOccupied { get; set; }
         public bool IsActive { get; set; }
 
@@ -27,6 +28,7 @@ namespace Domain.Models
             Id = Ulid.NewUlid();
             BinCode = binCode;
             WarehouseZoneId = warehouseZoneId;
+            CurrentWeight = 0;
             IsOccupied = false;
             Row = row;
             Section = section;
