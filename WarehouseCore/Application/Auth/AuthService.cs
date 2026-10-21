@@ -36,8 +36,8 @@ public class AuthService : IAuthService
         return Result<RegistrateFirstAdminResponse>.Success(new RegistrateFirstAdminResponse(firstAdmin.Email, request.Password));
     }
 
-    public async Task<Result<RegistrateFirstAdminRequest>> RegistrateCompanyAsync(RegistrateCompanyRequest request, CancellationToken token)
+    /*public async Task<Result<RegistrateFirstAdminRequest>> RegistrateCompanyAsync(RegistrateCompanyRequest request, CancellationToken token)
     {
 
-    }
+    }*/
 }

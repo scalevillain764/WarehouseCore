@@ -7,6 +7,13 @@ namespace Infrastructure
     {
         public DbSet<Company> Companies { get; set; }
         public RegistryDbContext(DbContextOptions<RegistryDbContext> options) : base(options) { }
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder.Properties<Ulid>()
+                .HaveConversion<UlidToStringConverter>()
+                .HaveMaxLength(26)
+                .AreFixedLength();
+        }
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<Company>()

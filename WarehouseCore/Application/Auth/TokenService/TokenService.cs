@@ -57,7 +57,7 @@ public class TokenService : ITokenService
         string refreshTokenHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
 
         user.RefreshTokenHash = refreshTokenHash;
-        user.RefreshTokenExpiresAt = DateTime.UtcNow.AddDays(7);
+        user.RefreshTokenExpiersAt = DateTime.UtcNow.AddDays(7);
 
         var cookieOptions = new CookieOptions
         {

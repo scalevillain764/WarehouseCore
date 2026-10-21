@@ -4,33 +4,23 @@ namespace Infrastructure
 {
     public class WmsDbContext : DbContext 
     {
-        public WmsDbContext(DbContextOptions<WmsDbContext> options, string schemaName) : base(options) {
-
-            if (string.IsNullOrWhiteSpace(schemaName))
-                throw new ArgumentException("Schema name cannot be empty or null", nameof(schemaName));
-
-            _schemaName = schemaName;
-        }
-        public readonly string _schemaName;
+        public WmsDbContext(DbContextOptions<WmsDbContext> options) : base(options) {}
         public DbSet<Bin> Bins { get; set; }
         public DbSet<WarehouseZone> Zones { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<WarehouseOperation> WarehouseOperations { get; set; }
+        public DbSet<WarehouseOperationItem> WarehouseOperationItems { get; set; }
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder.Properties<Ulid>()
+                .HaveConversion<UlidToStringConverter>()
+                .HaveMaxLength(26)
+                .AreFixedLength();
+        }
         protected override void OnModelCreating(ModelBuilder builder)
         {
-            builder.HasDefaultSchema(_schemaName);
-
-            builder.Entity<Warehouse>()
-                .HasOne(w => w.Company)
-                .WithMany(c => c.Warehouses)
-                .HasForeignKey(w => w.CompanyId);
-
-            builder.Entity<User>()
-                .HasOne(u => u.Company)
-                .WithMany(c => c.Workers)
-                .HasForeignKey(u => u.CompanyId);
-
             builder.Entity<WarehouseZone>()
                 .HasOne(z => z.Warehouse)
                 .WithMany(w => w.Zones)
@@ -59,7 +49,18 @@ namespace Infrastructure
             builder.Entity<WarehouseOperationItem>()
                 .HasOne(woi => woi.Product)
                 .WithMany(wo => wo.WarehouseOperationItems)
-                .HasForeignKey(woi => woi.ProductId);           
+                .HasForeignKey(woi => woi.ProductId);
+
+            builder.Entity<Warehouse>(entity => // addres is a part of warehouse
+            {
+                entity.OwnsOne(x => x.Address, address =>
+                {
+                    address.Property(x => x.Country);
+                    address.Property(x => x.City);
+                    address.Property(x => x.Street);
+                    address.Property(x => x.NumberBuilding);
+                });
+            });
         }
     }
 }

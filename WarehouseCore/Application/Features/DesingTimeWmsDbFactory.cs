@@ -8,11 +8,11 @@ public class DesignTimeWmsDbFactory : IDesignTimeDbContextFactory<WmsDbContext>
 {
     public WmsDbContext CreateDbContext(string[] args)
     {
-        using IHost host = Host.CreateDefaultBuilder(args)
-            .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Program>(); }) 
+        var config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false)
+            .AddJsonFile("appsettings.Development.json", optional: true)
             .Build();
-
-        IConfiguration config = host.Services.GetRequiredService<IConfiguration>();
 
         var connectionString = config.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))
@@ -22,6 +22,6 @@ public class DesignTimeWmsDbFactory : IDesignTimeDbContextFactory<WmsDbContext>
 
         optionsBuilder.UseNpgsql(connectionString);
 
-        return new WmsDbContext(optionsBuilder.Options, "default_schema");
+        return new WmsDbContext(optionsBuilder.Options);
     }
 }

@@ -13,6 +13,7 @@
         public Bin? SourceBin { get; set; } = null;
         public Ulid? DestinationBinId { get; set; } = null;
         public Bin? DestinationBin { get; set; } = null;
+        private WarehouseOperationItem() { }
         public WarehouseOperationItem(Ulid warehouseOperationId, Ulid productId, int plannedQuantity, Ulid? sourceBinId, Ulid? destinationBinId)
         {
             Id = Ulid.NewUlid();

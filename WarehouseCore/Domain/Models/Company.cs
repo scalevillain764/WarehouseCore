@@ -8,10 +8,6 @@
         public required string Code { get; init; }
         public bool IsActive { get; set; }
 
-        // navigation properties
-        public ICollection<Warehouse> Warehouses { get; set; } = [];
-        public ICollection<User> Workers { get; set; } = [];
-
         public Company(string name, string code)
         {
             Id = Ulid.NewUlid();

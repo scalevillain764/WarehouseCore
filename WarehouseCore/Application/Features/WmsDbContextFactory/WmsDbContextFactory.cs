@@ -1,5 +1,6 @@
 ﻿using Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 namespace Application.Features;
 
 public class WmsDbContextFactory : IWmsDbContextFactory
@@ -22,14 +23,22 @@ public class WmsDbContextFactory : IWmsDbContextFactory
 
         var connectionString = _configuration.GetConnectionString("DefaultConnection");
 
+        var connectionStringBuilder =
+            new NpgsqlConnectionStringBuilder(connectionString)
+            {
+                SearchPath = company.SchemaName
+            };
+
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("Connection string cannot be null or empty");
 
-        var optionsBuilder = new DbContextOptionsBuilder<WmsDbContext>();
+        var optionsBuilder =
+            new DbContextOptionsBuilder<WmsDbContext>();
 
-        optionsBuilder.UseNpgsql(connectionString);
+        optionsBuilder.UseNpgsql(
+            connectionStringBuilder.ConnectionString);
 
-        var newContext = new WmsDbContext(optionsBuilder.Options, company.SchemaName);
+        var newContext = new WmsDbContext(optionsBuilder.Options);
 
         return newContext;
     }

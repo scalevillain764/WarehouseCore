@@ -9,7 +9,14 @@
         public DateTime CreatedAt { get; init; }
         public DateTime? CompletedAt { get; set; } = null;
         public Ulid CreatedById { get; init; }
-        public ICollection<WarehouseOperationItem> Items = [];
+        public User? CreatedBy { get; set; } = null!;
+        public ICollection<WarehouseOperationItem> Items { get; set; } = [];
+
+        private WarehouseOperation()
+        {
+            Items = [];
+        }
+
         private string GetTypePrefix(WarehouseOperationType type)
             => type switch
             {

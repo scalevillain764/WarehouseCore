@@ -10,10 +10,14 @@
 
         // company
         public Ulid CompanyId { get; set; }
-        public Company? Company { get; set; } = null;
 
         // warehouse zones
         public IEnumerable<WarehouseZone> Zones { get; set; } = [];
+        private Warehouse() // ef
+        {
+            Name = null!;
+            Address = null!;
+        }
 
         public Warehouse(string name, Address address, Ulid companyId)
         {
