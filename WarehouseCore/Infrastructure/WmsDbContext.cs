@@ -11,7 +11,7 @@ namespace Infrastructure
 
             _schemaName = schemaName;
         }
-        private readonly string _schemaName;
+        public readonly string _schemaName;
         public DbSet<Bin> Bins { get; set; }
         public DbSet<WarehouseZone> Zones { get; set; }
         public DbSet<Warehouse> Warehouses { get; set; }
