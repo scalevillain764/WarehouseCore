@@ -1,3 +1,6 @@
+using Infrastructure;
+using Microsoft.EntityFrameworkCore;
+
 namespace WarehouseCore
 {
     public class Program
@@ -8,6 +11,22 @@ namespace WarehouseCore
 
             // Add services to the container.
             builder.Services.AddRazorPages();
+
+            
+            string connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+            if (string.IsNullOrEmpty(connectionString))
+                throw new InvalidDataException("Connection string can not be empty");
+
+            builder.Services.AddDbContext<WmsDbContext>(x =>
+            {
+                x.UseNpgsql(connectionString);
+            });
+
+            builder.Services.AddDbContext<RegistryDbContext>(x =>
+            {
+                x.UseNpgsql(connectionString);
+            });
 
             var app = builder.Build();
 
