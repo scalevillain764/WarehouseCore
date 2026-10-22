@@ -1,4 +1,6 @@
-﻿namespace Domain.Models
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Domain.Models
 {
     public class Company
     {
@@ -8,6 +10,7 @@
         public required string Code { get; init; }
         public bool IsActive { get; set; }
 
+        [SetsRequiredMembers]
         public Company(string name, string code)
         {
             Id = Ulid.NewUlid();
