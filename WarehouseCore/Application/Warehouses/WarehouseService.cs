@@ -104,6 +104,12 @@ public class WarehouseService : IWarehouseService
         if (warehouse is null)
             return Result<WarehouseResponse>.Fail(ErrorType.NotFound, "Warehouse not found");
 
+        bool nameExists = await context.Warehouses
+            .AnyAsync(x => x.Name == request.WarehouseName && x.Id != request.warehouseId, token);
+
+        if (nameExists)
+            return Result<WarehouseResponse>.Fail(ErrorType.Conflict, "This name already exists. Try another name");
+
         SetWarehouseProperties(warehouse, request);
 
         await context.SaveChangesAsync(token);
