@@ -21,6 +21,10 @@ namespace Infrastructure
         }
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            builder.Entity<Warehouse>()
+                .HasIndex(x => x.Name)
+                .IsUnique();
+
             builder.Entity<WarehouseZone>()
                 .HasOne(z => z.Warehouse)
                 .WithMany(w => w.Zones)

@@ -2,7 +2,7 @@
 
 namespace Application.Warehouses.Requests;
 
-public sealed record CreateWarehouseRequest(Ulid CompanyId,
+public sealed record CreateWarehouseRequest(
         string WarehouseName,
         string Country,
         string City,
