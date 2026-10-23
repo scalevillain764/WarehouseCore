@@ -39,6 +39,12 @@ public class WarehouseService : IWarehouseService
         if (!userExistsAtCompany)
             return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "User doesn't belong to this company");
 
+        bool warehouseExists = await context.Warehouses
+            .AnyAsync(x => x.Name == request.WarehouseName, token);
+
+        if (warehouseExists)
+            return Result<WarehouseResponse>.Fail(ErrorType.Conflict, "Warehouse with this name already exists");
+
         var warehouse = new Warehouse(request.WarehouseName, 
             new Address(request.Country, request.City, request.Street, request.NumberBuilding), _currentCompany.CompanyId);
 
@@ -72,7 +78,7 @@ public class WarehouseService : IWarehouseService
         if (warehouse.Zones.Any(x => x.IsActive) || warehouse.Zones.Any(x => x.Bins.Any(b => b.IsActive)))
             return Result<string>.Fail(ErrorType.Conflict, "Warehouse contaitns active zones or active bins. Please, try again later");
 
-        context.Warehouses.Remove(warehouse);
+        warehouse.IsActive = false;
 
         await context.SaveChangesAsync(token);
 
@@ -93,7 +99,7 @@ public class WarehouseService : IWarehouseService
         var warehouse = await context.Warehouses
             .Where(x => x.IsActive)
             .Include(x => x.Address)
-            .FirstOrDefaultAsync(x => x.Id == request.warehouseId);
+            .FirstOrDefaultAsync(x => x.Id == request.warehouseId, token);
 
         if (warehouse is null)
             return Result<WarehouseResponse>.Fail(ErrorType.NotFound, "Warehouse not found");

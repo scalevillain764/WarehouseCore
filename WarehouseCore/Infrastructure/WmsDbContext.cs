@@ -22,8 +22,20 @@ namespace Infrastructure
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<Warehouse>()
-                .HasIndex(x => x.Name)
+                .HasIndex(w => w.Name)
                 .IsUnique();
+
+            builder.Entity<Warehouse>()
+                .HasQueryFilter(w => w.IsActive);
+
+            builder.Entity<Company>()
+                .HasQueryFilter(c => c.IsActive);
+
+            builder.Entity<Bin>()
+                .HasQueryFilter(b => b.IsActive);
+
+            builder.Entity<WarehouseZone>()
+                .HasQueryFilter(wz => wz.IsActive);
 
             builder.Entity<WarehouseZone>()
                 .HasOne(z => z.Warehouse)

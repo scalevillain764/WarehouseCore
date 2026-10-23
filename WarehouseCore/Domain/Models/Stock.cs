@@ -13,6 +13,7 @@
         public Product Product { get; set; } = null!;
 
         public int Quantity { get; set; }
+
         public Stock(Ulid binId, Ulid productId, int quantity)
         {
             Id = Ulid.NewUlid();
