@@ -85,7 +85,7 @@ public class WarehouseService : IWarehouseService
         return Result<string>.Success("OK");
     }
 
-    public async Task<Result<WarehouseResponse>> EditWarehousAsync(Ulid userId, EditWarehouseRequest request, CancellationToken token)
+    public async Task<Result<WarehouseResponse>> EditWarehouseAsync(Ulid userId, EditWarehouseRequest request, CancellationToken token)
     {
         await using var context = await _wmsContextFactory
           .GetContextAsync(_currentCompany.CompanyId, token);
@@ -117,4 +117,23 @@ public class WarehouseService : IWarehouseService
         return Result<WarehouseResponse>.Success(new WarehouseResponse(warehouse));
     }
 
+    public async Task<Result<WarehouseResponse>> GetWarehouseAsync(Ulid userId, Ulid warehouseId, CancellationToken token)
+    {
+        await using var context = await _wmsContextFactory
+         .GetContextAsync(_currentCompany.CompanyId, token);
+
+        bool userExistsAtCompany = await context.Users
+            .AnyAsync(x => x.Id == userId, token);
+
+        if (!userExistsAtCompany)
+            return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "User doesn't belong to this company");
+
+        var warehouse = await context.Warehouses
+            .Include(x => x.Address)
+            .FirstOrDefaultAsync(x => x.Id == warehouseId, token);
+
+        return warehouse is null ?
+            Result<WarehouseResponse>.Fail(ErrorType.NotFound, "Warehouse not found")
+            : Result<WarehouseResponse>.Success(new WarehouseResponse(warehouse));
+    }
 }

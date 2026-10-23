@@ -1,10 +1,10 @@
 ﻿using Domain.Models;
 namespace Application.Companies.Responses;
-public sealed class CompanyRequest(
+public sealed record CompanyResponse(
     Ulid Id,
     string Name)
 {
-    public CompanyRequest(Company c) :
+    public CompanyResponse (Company c) :
         this(c.Id, c.Name)
     { }
 }

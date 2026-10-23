@@ -5,7 +5,7 @@ namespace Domain.Models
     public class Company
     {
         public Ulid Id { get; init; }
-        public required string Name { get; init; }
+        public required string Name { get; set; }
         public required string SchemaName { get; init; }
         public required string Code { get; init; }
         public bool IsActive { get; set; }
