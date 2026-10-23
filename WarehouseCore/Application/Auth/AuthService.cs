@@ -62,13 +62,17 @@ public class AuthService : IAuthService
         try
         {
             await _context.Database
-            .MigrateAsync(token);
+                .MigrateAsync(token);
         }
         catch (Exception ex)
         {
+            await _registryContext.Database
+                .ExecuteSqlRawAsync($"DROP SCHEMA {quotedSchemaName} CASCADE", token);
+
             _registryContext.Remove(newCompany);
             await _registryContext.SaveChangesAsync(token);
-            throw; // to exception middleware
+
+            throw; // To exception middleware
         }
 
         // Adding admin to current company
@@ -86,4 +90,6 @@ public class AuthService : IAuthService
 
         return Result<RegistrateCompanyResponse>.Success(new RegistrateCompanyResponse(newCompany.Code, firstAdminRequest.Data!));
     }
+
+    // Add error handling
 }

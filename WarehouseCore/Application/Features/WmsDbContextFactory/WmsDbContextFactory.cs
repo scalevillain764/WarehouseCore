@@ -36,7 +36,12 @@ public class WmsDbContextFactory : IWmsDbContextFactory
             new DbContextOptionsBuilder<WmsDbContext>();
 
         optionsBuilder.UseNpgsql(
-            connectionStringBuilder.ConnectionString);
+            connectionStringBuilder.ConnectionString,
+            npgsqlOptions =>
+                npgsqlOptions.MigrationsHistoryTable(
+                    "__EFMigrationsHistory",
+                    company.SchemaName
+                    ));
 
         var newContext = new WmsDbContext(optionsBuilder.Options);
 

@@ -51,7 +51,7 @@ namespace Infrastructure
                 .WithMany(wo => wo.WarehouseOperationItems)
                 .HasForeignKey(woi => woi.ProductId);
 
-            builder.Entity<Warehouse>(entity => // addres is a part of warehouse
+            builder.Entity<Warehouse>(entity => // Addres is a part of warehouse
             {
                 entity.OwnsOne(x => x.Address, address =>
                 {
