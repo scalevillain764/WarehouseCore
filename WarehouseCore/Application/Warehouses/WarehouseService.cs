@@ -52,9 +52,10 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
             .GetContextAsync(_currentCompany.CompanyId, token);
 
-        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can create warehouses", token);       
-        if(!adminCheckRequest.IsSuccess)
-            return adminCheckRequest()
+        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can create warehouses", token);
+
+        if (!adminCheckRequest.IsSuccess)
+            return Result<WarehouseResponse>.Fail((ErrorType)adminCheckRequest.ErrorType!, adminCheckRequest.ErrorMessage!);
 
         bool warehouseExists = await context.Warehouses
             .AnyAsync(x => x.Name == request.WarehouseName, token);
@@ -77,15 +78,10 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
            .GetContextAsync(_currentCompany.CompanyId, token);
 
-       var user = await context.Users
-             .Where(x => x.CompanyId == _currentCompany.CompanyId)
-             .FirstOrDefaultAsync(x => x.Id == userId, token);
+        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can remove warehouses", token);
 
-        if (user is null)
-            return Result<string>.Fail(ErrorType.NotFound, "User not found");
-
-        if (user.Type != Domain.Models.UserType.Admin)
-            return Result<string>.Fail(ErrorType.Forbidden, "Only admins can remove warehouses");
+        if (!adminCheckRequest.IsSuccess)
+            return Result<string>.Fail((ErrorType)adminCheckRequest.ErrorType!, adminCheckRequest.ErrorMessage!);
 
         var warehouse = await context.Warehouses
             .Where(x => x.IsActive)
@@ -111,15 +107,10 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
           .GetContextAsync(_currentCompany.CompanyId, token);
 
-        var user = await context.Users
-            .Where(x => x.CompanyId == _currentCompany.CompanyId)
-            .FirstOrDefaultAsync(x => x.Id == userId, token);
+        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can edit warehouses", token);
 
-        if (user is null)
-            return Result<WarehouseResponse>.Fail(ErrorType.NotFound, "User not found");
-
-        if (user.Type != Domain.Models.UserType.Admin)
-            return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "Only admins can edit warehouses");
+        if (!adminCheckRequest.IsSuccess)
+            return Result<WarehouseResponse>.Fail((ErrorType)adminCheckRequest.ErrorType!, adminCheckRequest.ErrorMessage!);
 
         var warehouse = await context.Warehouses
             .Where(x => x.IsActive)
@@ -147,11 +138,8 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
          .GetContextAsync(_currentCompany.CompanyId, token);
 
-        bool userExistsAtCompany = await context.Users
-            .AnyAsync(x => x.Id == userId, token);
-
-        if (!userExistsAtCompany)
-            return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "User doesn't belong to this company");
+        if (await EnsureUserExistsAsync(context, userId, token))
+            return Result<WarehouseResponse>.Fail(ErrorType.Conflict, "User doesn't belong to this company");
 
         var warehouse = await context.Warehouses
             .Include(x => x.Address)
@@ -167,15 +155,10 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
           .GetContextAsync(_currentCompany.CompanyId, token);
 
-        var user = await context.Users
-            .Where(x => x.CompanyId == _currentCompany.CompanyId)
-            .FirstOrDefaultAsync(x => x.Id == userId, token);
+        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can activate warehouses", token);
 
-        if (user is null)
-            return Result<WarehouseResponse>.Fail(ErrorType.NotFound, "User not found");
-
-        if (user.Type != Domain.Models.UserType.Admin)
-            return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "Only admins can activate warehouses");
+        if (!adminCheckRequest.IsSuccess)
+            return Result<WarehouseResponse>.Fail((ErrorType)adminCheckRequest.ErrorType!, adminCheckRequest.ErrorMessage!);
 
         var warehouse = await context.Warehouses
             .IgnoreQueryFilters()
