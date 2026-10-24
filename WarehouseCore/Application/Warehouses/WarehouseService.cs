@@ -13,11 +13,15 @@ public class WarehouseService : IWarehouseService
 {
     private readonly IWmsDbContextFactory _wmsContextFactory;
     private readonly ICurrentCompanyContext _currentCompany;
-  
-    public WarehouseService(IWmsDbContextFactory wmsContextFactory, ICurrentCompanyContext currentCompany)
+    private readonly ICompanyAcessValidator _companyValidator;
+
+    public WarehouseService(IWmsDbContextFactory wmsContextFactory, 
+        ICurrentCompanyContext currentCompany, 
+        ICompanyAcessValidator companyValidator)
     {
         _wmsContextFactory = wmsContextFactory;
         _currentCompany = currentCompany;
+        _companyValidator = companyValidator;
     }
 
     private void SetWarehouseProperties(Warehouse warehouse, EditWarehouseRequest request)
@@ -29,30 +33,13 @@ public class WarehouseService : IWarehouseService
         warehouse.Address.NumberBuilding = request.NumberBuilding;
     }
     
-    private async Task<Result<User>> EnsureUserIsAdminAsync(WmsDbContext context, Ulid userId, string ErrorMsg, CancellationToken token)
-    {
-        var user = await context.Users
-            .Where(x => x.CompanyId == _currentCompany.CompanyId)
-            .FirstOrDefaultAsync(x => x.Id == userId, token);
-
-        if (user is null)
-            return Result<User>.Fail(ErrorType.NotFound, "User not found");
-
-        if (user.Type != Domain.Models.UserType.Admin)
-            return Result<User>.Fail(ErrorType.Forbidden, ErrorMsg);
-
-        return Result<User>.Success(user);
-    }
-
-    private async Task<bool> EnsureUserExistsAsync(WmsDbContext context, Ulid userId, CancellationToken token)
-        => await context.Users.AnyAsync(x => x.Id == userId, token);
-
     public async Task<Result<WarehouseResponse>> CreateWarehouseAsync(Ulid userId, CreateWarehouseRequest request, CancellationToken token)
     {
         await using var context = await _wmsContextFactory
             .GetContextAsync(_currentCompany.CompanyId, token);
 
-        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can create warehouses", token);
+        var adminCheckRequest = await _companyValidator
+            .EnsureUserIsAdminAsync(context, userId, "Only admin can create warehouses", token);
 
         if (!adminCheckRequest.IsSuccess)
             return Result<WarehouseResponse>.Fail((ErrorType)adminCheckRequest.ErrorType!, adminCheckRequest.ErrorMessage!);
@@ -78,7 +65,8 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
            .GetContextAsync(_currentCompany.CompanyId, token);
 
-        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can remove warehouses", token);
+        var adminCheckRequest = await _companyValidator
+           .EnsureUserIsAdminAsync(context, userId, "Only admin can remove warehouses", token);
 
         if (!adminCheckRequest.IsSuccess)
             return Result<string>.Fail((ErrorType)adminCheckRequest.ErrorType!, adminCheckRequest.ErrorMessage!);
@@ -107,7 +95,8 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
           .GetContextAsync(_currentCompany.CompanyId, token);
 
-        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can edit warehouses", token);
+        var adminCheckRequest = await _companyValidator
+            .EnsureUserIsAdminAsync(context, userId, "Only admin can edit warehouses", token);
 
         if (!adminCheckRequest.IsSuccess)
             return Result<WarehouseResponse>.Fail((ErrorType)adminCheckRequest.ErrorType!, adminCheckRequest.ErrorMessage!);
@@ -138,7 +127,7 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
          .GetContextAsync(_currentCompany.CompanyId, token);
 
-        if (await EnsureUserExistsAsync(context, userId, token))
+        if (!await _companyValidator.EnsureUserExistsAsync(context, userId, token))
             return Result<WarehouseResponse>.Fail(ErrorType.Conflict, "User doesn't belong to this company");
 
         var warehouse = await context.Warehouses
@@ -155,7 +144,8 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
           .GetContextAsync(_currentCompany.CompanyId, token);
 
-        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can activate warehouses", token);
+        var adminCheckRequest = await _companyValidator
+            .EnsureUserIsAdminAsync(context, userId, "Only admin can activate warehouses", token);
 
         if (!adminCheckRequest.IsSuccess)
             return Result<WarehouseResponse>.Fail((ErrorType)adminCheckRequest.ErrorType!, adminCheckRequest.ErrorMessage!);

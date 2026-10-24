@@ -1,4 +1,6 @@
-﻿namespace Domain.Models
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Domain.Models
 {
     public class WarehouseZone
     {
@@ -37,6 +39,7 @@
             return $"{prefix}-{idPart}";
         }
 
+        [SetsRequiredMembers]
         public WarehouseZone(string name, string? description, Ulid warehouseId, WarehouseZoneType type)
         {
             Id = Ulid.NewUlid();

@@ -2,7 +2,6 @@
 using Application.Warehouses.Responses;
 using Infrastructure.ResponsePatterns;
 using Microsoft.IdentityModel.Tokens;
-
 namespace Application.Warehouses;
 public interface IWarehouseService
 {

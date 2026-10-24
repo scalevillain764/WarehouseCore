@@ -14,29 +14,15 @@ public class CompanyService : ICompanyService
     private readonly IWmsDbContextFactory _wmsContextFactory;
     private readonly ICurrentCompanyContext _companyContext;
     private readonly RegistryDbContext _registryDbContext;
-    public CompanyService(IWmsDbContextFactory wmsContextFactory, ICurrentCompanyContext companyContext, RegistryDbContext registryDbContext)
+    private readonly ICompanyAcessValidator _companyValidator;
+    public CompanyService(IWmsDbContextFactory wmsContextFactory, ICurrentCompanyContext companyContext,
+        RegistryDbContext registryDbContext, ICompanyAcessValidator companyValidator)
     {
         _wmsContextFactory = wmsContextFactory;
         _companyContext = companyContext;
         _registryDbContext = registryDbContext;
+        _companyValidator = companyValidator;
     }
-    private async Task<Result<User>> EnsureUserIsAdminAsync(WmsDbContext context, Ulid userId, string ErrorMsg, CancellationToken token)
-    {
-        var user = await context.Users
-            .Where(x => x.CompanyId == _companyContext.CompanyId)
-            .FirstOrDefaultAsync(x => x.Id == userId, token);
-
-        if (user is null)
-            return Result<User>.Fail(ErrorType.NotFound, "User not found");
-
-        if (user.Type != Domain.Models.UserType.Admin)
-            return Result<User>.Fail(ErrorType.Forbidden, ErrorMsg);
-
-        return Result<User>.Success(user);
-    }
-
-    private async Task<bool> EnsureUserExistsAsync(WmsDbContext context, Ulid userId, CancellationToken token)
-        => await context.Users.AnyAsync(x => x.Id == userId, token);
 
     public async Task<Result<CompanyResponse>> GetCurrentCompanyAsync(Ulid userId, CancellationToken token)
     {
@@ -49,7 +35,7 @@ public class CompanyService : ICompanyService
         if (company is null)
             return Result<CompanyResponse>.Fail(ErrorType.NotFound, "Company not found");
 
-        if (await EnsureUserExistsAsync(context, userId, token))
+        if (!await _companyValidator.EnsureUserExistsAsync(context, userId, token))
             return Result<CompanyResponse>.Fail(ErrorType.Conflict, "User doesn't belong to company");
 
         return Result<CompanyResponse>.Success(new CompanyResponse(company));
@@ -66,7 +52,9 @@ public class CompanyService : ICompanyService
         if (company is null)
             return Result<CompanyResponse>.Fail(ErrorType.NotFound, "Company not found");
 
-        var userRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can edit company properties", token);
+        var userRequest = await _companyValidator
+            .EnsureUserIsAdminAsync(context, userId, "Only admin can edit company properties", token);
+
         if (!userRequest.IsSuccess)
             return Result<CompanyResponse>.Fail((ErrorType)userRequest.ErrorType, userRequest.ErrorMessage);
 
