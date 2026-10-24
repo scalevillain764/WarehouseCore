@@ -1,2 +1,2 @@
 ﻿namespace Domain.Models;
-public enum UserType { Admin, Worker };
+public enum UserType { Admin, Worker, Manager };

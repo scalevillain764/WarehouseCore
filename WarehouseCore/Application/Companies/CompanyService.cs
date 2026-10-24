@@ -51,11 +51,15 @@ public class CompanyService : ICompanyService
         if (company is null)
             return Result<CompanyResponse>.Fail(ErrorType.NotFound, "Company not found");
 
-        bool userExistsAtCompany = await context.Users
-           .AnyAsync(x => x.Id == userId, token);
+        var user = await context.Users
+            .Where(x => x.CompanyId == _companyContext.CompanyId)
+            .FirstOrDefaultAsync(x => x.Id == userId, token);
 
-        if (!userExistsAtCompany)
-            return Result<CompanyResponse>.Fail(ErrorType.Forbidden, "User doesn't belong to this company");
+        if (user is null)
+            return Result<CompanyResponse>.Fail(ErrorType.NotFound, "User not found");
+
+        if (user.Type != Domain.Models.UserType.Admin)
+            return Result<CompanyResponse>.Fail(ErrorType.Forbidden, "Only admins can edit company properties");
 
         bool nameExists = await _registryDbContext.Companies
             .AnyAsync(x => x.Name == request.Name && x.Id != _companyContext.CompanyId, token);

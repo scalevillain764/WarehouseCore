@@ -1,10 +1,11 @@
-﻿using Application.CompanyContext;
+﻿using Application.Companies.Responses;
+using Application.CompanyContext;
 using Application.Features;
 using Application.Warehouses.Requests;
 using Application.Warehouses.Responses;
+using Domain.Models;
 using Infrastructure;
 using Infrastructure.ResponsePatterns;
-using Domain.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.Warehouses;
@@ -28,16 +29,32 @@ public class WarehouseService : IWarehouseService
         warehouse.Address.NumberBuilding = request.NumberBuilding;
     }
     
+    private async Task<Result<User>> EnsureUserIsAdminAsync(WmsDbContext context, Ulid userId, string ErrorMsg, CancellationToken token)
+    {
+        var user = await context.Users
+            .Where(x => x.CompanyId == _currentCompany.CompanyId)
+            .FirstOrDefaultAsync(x => x.Id == userId, token);
+
+        if (user is null)
+            return Result<User>.Fail(ErrorType.NotFound, "User not found");
+
+        if (user.Type != Domain.Models.UserType.Admin)
+            return Result<User>.Fail(ErrorType.Forbidden, ErrorMsg);
+
+        return Result<User>.Success(user);
+    }
+
+    private async Task<bool> EnsureUserExistsAsync(WmsDbContext context, Ulid userId, CancellationToken token)
+        => await context.Users.AnyAsync(x => x.Id == userId, token);
+
     public async Task<Result<WarehouseResponse>> CreateWarehouseAsync(Ulid userId, CreateWarehouseRequest request, CancellationToken token)
     {
         await using var context = await _wmsContextFactory
             .GetContextAsync(_currentCompany.CompanyId, token);
 
-        bool userExistsAtCompany = await context.Users
-            .AnyAsync(x => x.Id == userId, token);
-
-        if (!userExistsAtCompany)
-            return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "User doesn't belong to this company");
+        var adminCheckRequest = await EnsureUserIsAdminAsync(context, userId, "Only admin can create warehouses", token);       
+        if(!adminCheckRequest.IsSuccess)
+            return adminCheckRequest()
 
         bool warehouseExists = await context.Warehouses
             .AnyAsync(x => x.Name == request.WarehouseName, token);
@@ -60,11 +77,15 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
            .GetContextAsync(_currentCompany.CompanyId, token);
 
-        bool userExistsAtCompany = await context.Users
-            .AnyAsync(x => x.Id == userId, token);
+       var user = await context.Users
+             .Where(x => x.CompanyId == _currentCompany.CompanyId)
+             .FirstOrDefaultAsync(x => x.Id == userId, token);
 
-        if (!userExistsAtCompany)
-            return Result<string>.Fail(ErrorType.Forbidden, "User doesn't belong to this company");
+        if (user is null)
+            return Result<string>.Fail(ErrorType.NotFound, "User not found");
+
+        if (user.Type != Domain.Models.UserType.Admin)
+            return Result<string>.Fail(ErrorType.Forbidden, "Only admins can remove warehouses");
 
         var warehouse = await context.Warehouses
             .Where(x => x.IsActive)
@@ -90,11 +111,15 @@ public class WarehouseService : IWarehouseService
         await using var context = await _wmsContextFactory
           .GetContextAsync(_currentCompany.CompanyId, token);
 
-        bool userExistsAtCompany = await context.Users
-            .AnyAsync(x => x.Id == userId, token);
+        var user = await context.Users
+            .Where(x => x.CompanyId == _currentCompany.CompanyId)
+            .FirstOrDefaultAsync(x => x.Id == userId, token);
 
-        if (!userExistsAtCompany)
-            return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "User doesn't belong to this company");
+        if (user is null)
+            return Result<WarehouseResponse>.Fail(ErrorType.NotFound, "User not found");
+
+        if (user.Type != Domain.Models.UserType.Admin)
+            return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "Only admins can edit warehouses");
 
         var warehouse = await context.Warehouses
             .Where(x => x.IsActive)
@@ -136,4 +161,35 @@ public class WarehouseService : IWarehouseService
             Result<WarehouseResponse>.Fail(ErrorType.NotFound, "Warehouse not found")
             : Result<WarehouseResponse>.Success(new WarehouseResponse(warehouse));
     }
+
+    public async Task<Result<WarehouseResponse>> ActivateWarehouseAsync(Ulid userId, Ulid warehouseId, CancellationToken token)
+    {
+        await using var context = await _wmsContextFactory
+          .GetContextAsync(_currentCompany.CompanyId, token);
+
+        var user = await context.Users
+            .Where(x => x.CompanyId == _currentCompany.CompanyId)
+            .FirstOrDefaultAsync(x => x.Id == userId, token);
+
+        if (user is null)
+            return Result<WarehouseResponse>.Fail(ErrorType.NotFound, "User not found");
+
+        if (user.Type != Domain.Models.UserType.Admin)
+            return Result<WarehouseResponse>.Fail(ErrorType.Forbidden, "Only admins can activate warehouses");
+
+        var warehouse = await context.Warehouses
+            .IgnoreQueryFilters()
+            .Where(x => !x.IsActive)
+            .FirstOrDefaultAsync(x => x.Id == warehouseId, token);
+
+        if (warehouse is null)
+            return Result<WarehouseResponse>.Fail(ErrorType.NotFound, "Warehouse not found");
+
+        warehouse.IsActive = true;
+
+        await context.SaveChangesAsync(token);
+
+        return Result<WarehouseResponse>.Success(new WarehouseResponse(warehouse));
+    }
+
 }
