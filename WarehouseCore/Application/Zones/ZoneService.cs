@@ -127,15 +127,71 @@ public class ZoneService : IZoneService
         return Result<ZoneDetailsResponse>.Success(new ZoneDetailsResponse(zone));
     }
 
-    public async Task<Result<PagedResponse<ZoneResponse>>> GetActiveZonesByCompany(Ulid userId, CancellationToken token)
+    public async Task<Result<PagedResponse<ZoneResponse>>> GetZonesAsync(Ulid userId, GetZonesQueryRequest query, CancellationToken token)
     {
+        if (query.Page < 1 || query.PageSize < 1)
+            return Result<PagedResponse<ZoneResponse>>.Fail(ErrorType.Validation, "Page or page size invalid");
+
         var context = await _wmsFactory
             .GetContextAsync(userId, token);
 
         if (!await _companyValidator.EnsureUserExistsAsync(context, userId, token))
             return Result<PagedResponse<ZoneResponse>>.Fail(ErrorType.Conflict, "User doesn't belong to company");
 
-        var zones = await context
+        var queryable_zones = context.Zones.AsQueryable();
 
+        if(query.Types is not null && query.Types.Count > 0)
+        {
+            queryable_zones = queryable_zones
+                .Where(z => query.Types.Contains(z.Type));
+        }
+
+        if(query.Warehouses is not null && query.Warehouses.Count > 0)
+        {
+            queryable_zones = queryable_zones
+                .Where(z => query.Warehouses.Contains(z.Id));
+        }
+
+        if(query.Name is not null)
+        {
+            var lower_q_name = query.Name
+                .ToLower()
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            foreach(var word in lower_q_name)
+            {
+                queryable_zones = queryable_zones
+                    .Where(z => z.Name.ToLower().Contains(word));
+            }
+        }
+
+        if(!query.IsActive)
+        {
+            var adminCheckRequest = await _companyValidator
+             .EnsureUserIsAdminAsync(context, userId, "Only admins can see inactive zones", token);
+
+            if (!adminCheckRequest.IsSuccess)
+                return Result<PagedResponse<ZoneResponse>>.Fail((ErrorType)adminCheckRequest.ErrorType, adminCheckRequest.ErrorMessage);
+
+            queryable_zones = queryable_zones.IgnoreQueryFilters().Where(z => !z.IsActive);
+        }
+
+        int totalCount = await queryable_zones
+            .CountAsync(token);
+
+        var rez = await queryable_zones
+            .AsNoTracking()
+            .Skip((query.Page - 1) * query.PageSize)
+            .Take(query.PageSize)
+            .Select(x => new ZoneResponse(
+                x.Id,
+                x.Name,
+                x.Code,
+                x.Type.ToString()
+                ))
+            .ToListAsync(token);
+
+        return Result<PagedResponse<ZoneResponse>>
+            .Success(new PagedResponse<ZoneResponse>(rez, query.Page, query.PageSize, totalCount));
     }
 }
