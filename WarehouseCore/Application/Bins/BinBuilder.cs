@@ -97,7 +97,6 @@ namespace Application.Bins
                         .ToList());
         }
 
-
         // add row
         public async Task<Result<IReadOnlyList<BinResponse>>> AddRowAsync(AddRowRequest request, CancellationToken token)
         {

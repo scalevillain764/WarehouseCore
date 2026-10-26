@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Drawing;
 
 namespace Domain.Models
 {
@@ -35,6 +36,8 @@ namespace Domain.Models
 
             return $"{idPart}-{namePart}-{brandPart}-{catPart}";
         }
+
+        [SetsRequiredMembers]
         public Product(string name, string? description, ProductCategory category, string brand, UnitOfMeasure unitOfMeasure,       
            decimal weightPerUnit ,string? color)
         {
