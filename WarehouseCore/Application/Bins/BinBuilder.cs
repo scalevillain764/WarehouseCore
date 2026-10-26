@@ -25,6 +25,7 @@ namespace Application.Bins
                 return Result<IReadOnlyList<BinResponse>>.Fail(ErrorType.NotFound, "Zone not found");
 
             var lastSection = await _context.Bins
+                .AsNoTracking()
                 .Where(x => x.WarehouseZoneId == request.zoneId)
                 .Where(x => x.Row == request.rowNumber)
                 .MaxAsync(x => (int?)x.Section, token);
@@ -65,6 +66,7 @@ namespace Application.Bins
                 return Result<IReadOnlyList<BinResponse>>.Fail(ErrorType.NotFound, "Zone not found");
 
             var lastLevel = await _context.Bins
+                .AsNoTracking()
                 .Where(x => x.WarehouseZoneId == request.zoneId)
                 .Where(x => x.Row == request.rowNumber)
                 .Where(x => x.Section == request.sectionNumber)
@@ -106,6 +108,7 @@ namespace Application.Bins
                 return Result<IReadOnlyList<BinResponse>>.Fail(ErrorType.NotFound, "Zone not found");
 
             var lastRow = await _context.Bins
+                .AsNoTracking()
                 .Where(x => x.WarehouseZoneId == request.zoneId)
                 .MaxAsync(x => (int?)x.Row, token);
 
