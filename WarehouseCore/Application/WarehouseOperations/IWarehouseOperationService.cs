@@ -5,5 +5,5 @@ using Infrastructure.ResponsePatterns;
 namespace Application.WarehouseOperations;
 public interface IWarehouseOperationService
 {
-    Task<Result<WarehouseOperationDetailsResponse>> CreateWarehouseOperation(Ulid userId, CreateWarehouseOperationRequest request, CancellationToken token);
+    Task<Result<WarehouseOperationDetailsResponse>> CreateWarehouseOperationAsync(Ulid userId, CreateWarehouseOperationRequest request, CancellationToken token);
 }
