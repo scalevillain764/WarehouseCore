@@ -12,7 +12,7 @@ public class CompanyAcessValidator : ICompanyAcessValidator
     {
         _currentCompany = companyContext;
     }
-    private async Task<Result<User>> EnsureUserIsAsync(WmsDbContext context, Ulid userId, string ErrorMsg, UserType type, CancellationToken token)
+    private async Task<Result<User>> EnsureUserIsAsync(WmsDbContext context, Ulid userId, string ErrorMsg, IReadOnlyCollection<UserType> types, CancellationToken token)
     {
         var user = await context.Users
            .Where(x => x.CompanyId == _currentCompany.CompanyId)
@@ -21,16 +21,13 @@ public class CompanyAcessValidator : ICompanyAcessValidator
         if (user is null)
             return Result<User>.Fail(ErrorType.NotFound, "User not found");
 
-        if (user.Type != type)
-            return Result<User>.Fail(ErrorType.Forbidden, ErrorMsg);
-
-        return Result<User>.Success(user);
+        return !types.Contains(user.Type) ? Result<User>.Fail(ErrorType.Forbidden, ErrorMsg) : Result<User>.Success(user);
     }
     public async Task<Result<User>> EnsureUserIsAdminAsync(WmsDbContext context, Ulid userId, string ErrorMsg, CancellationToken token)
-        => await EnsureUserIsAsync(context, userId, ErrorMsg, UserType.Admin, token);
+        => await EnsureUserIsAsync(context, userId, ErrorMsg, new List<UserType> { UserType.Admin }, token);
 
-    public async Task<Result<User>> EnsureUserIsManagerAsync(WmsDbContext context, Ulid userId, string ErrorMsg, CancellationToken token)
-        => await EnsureUserIsAsync(context, userId, ErrorMsg, UserType.Manager, token);
+    public async Task<Result<User>> EnsureUserHasAnyRoleAsync(WmsDbContext context, Ulid userId, string ErrorMsg, IReadOnlyCollection<UserType> types, CancellationToken token)
+        => await EnsureUserIsAsync(context, userId, ErrorMsg, types, token);
 
     public async Task<bool> EnsureUserExistsAsync(WmsDbContext context, Ulid userId, CancellationToken token)
         => await context.Users.AnyAsync(x => x.Id == userId, token);

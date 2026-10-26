@@ -7,5 +7,5 @@ public interface ICompanyAcessValidator
 {
     Task<Result<User>> EnsureUserIsAdminAsync(WmsDbContext context, Ulid userId, string ErrorMsg, CancellationToken token);
     Task<bool> EnsureUserExistsAsync(WmsDbContext context, Ulid userId, CancellationToken token);
-    Task<Result<User>> EnsureUserIsManagerAsync(WmsDbContext context, Ulid userId, string ErrorMsg, CancellationToken token);
+    Task<Result<User>> EnsureUserHasAnyRoleAsync(WmsDbContext context, Ulid userId, string ErrorMsg, ICollection<UserType> types, CancellationToken token);
 }
