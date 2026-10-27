@@ -7,7 +7,7 @@ public sealed record GetWarehouseOperationsRequest(
     string? OperationNumber,
     List<WarehouseOperationType>? Types,
     List<WarehouseOperationStatus>? Statuses,
-    DateTime CreatedAt,
+    DateTime? CreatedAt,
     DateTime? CompletedAt,
     Ulid? CreatedById,
     string? FirstName,

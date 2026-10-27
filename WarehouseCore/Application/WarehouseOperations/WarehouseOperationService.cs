@@ -116,7 +116,8 @@ public class WarehouseOperationService : IWarehouseOperationService
         if (request.WorkerType is not null)
             warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CreatedBy.Type == request.WorkerType);
 
-        warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CreatedAt == request.CreatedAt)
+        if (request.CreatedAt is not null)
+            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CreatedAt == request.CreatedAt);
 
         int totalCount = await warehouseOperationsQueryable
             .CountAsync(token);
