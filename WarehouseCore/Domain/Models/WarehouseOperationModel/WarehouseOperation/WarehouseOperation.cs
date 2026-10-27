@@ -3,7 +3,7 @@
     public class WarehouseOperation
     {
         public Ulid Id { get; init; }
-        public string? OperationNumber { get; init; } = null;
+        public string OperationNumber { get; init; }
         public WarehouseOperationType Type { get; init; }
         public WarehouseOperationStatus Status { get; set; }
         public DateTime CreatedAt { get; init; }
