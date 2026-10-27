@@ -81,6 +81,7 @@ public class WarehouseOperationService : IWarehouseOperationService
             return Result<PagedResponse<WarehouseOperationResponse>>.Fail(ErrorType.NotFound, "User doesn't belong to company");
 
         var warehouseOperationsQueryable = context.WarehouseOperations
+            .AsNoTracking()
             .Include(x => x.CreatedBy)
             .AsQueryable();
 
@@ -123,8 +124,7 @@ public class WarehouseOperationService : IWarehouseOperationService
             .CountAsync(token);
 
         var rez = await warehouseOperationsQueryable
-            .AsNoTracking()
-            .Skip((1 - request.Page) * request.PageSize)
+            .Skip((request.Page - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(x => new WarehouseOperationResponse(
                   x.Id,
