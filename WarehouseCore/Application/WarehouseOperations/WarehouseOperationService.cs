@@ -75,7 +75,7 @@ public class WarehouseOperationService : IWarehouseOperationService
     public async Task<Result<PagedResponse<WarehouseOperationResponse>>> GetWarehouseOperationsAsync(Ulid userId,
         GetWarehouseOperationsRequest request, CancellationToken token)
     {
-        if (request.Page < 0 || request.PageSize < 0)
+        if (request.Page < 1 || request.PageSize < 1)
             return Result<PagedResponse<WarehouseOperationResponse>>.Fail(ErrorType.Validation, "Validation error");
 
         await using var context = await _wmsFactory
@@ -93,9 +93,8 @@ public class WarehouseOperationService : IWarehouseOperationService
         {
             var searchTerm = request.OperationNumber.Trim();
 
-            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x =>
-                x.OperationNumber == searchTerm ||
-                x.OperationNumber.Contains(searchTerm));
+            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => 
+                x.OperationNumber == searchTerm || x.OperationNumber.Contains(searchTerm));
         }
 
         if(request.Types is not null)
@@ -116,15 +115,15 @@ public class WarehouseOperationService : IWarehouseOperationService
 
         if (request.FirstName is not null)
             warehouseOperationsQueryable = warehouseOperationsQueryable
-                .Where(x => x.CreatedBy.FirstName == request.FirstName);
+                .Where(x => x.CreatedBy!.FirstName == request.FirstName);
 
         if(request.SecondName is not null)
             warehouseOperationsQueryable = warehouseOperationsQueryable
-                .Where(x => x.CreatedBy.SecondName == request.SecondName);
+                .Where(x => x.CreatedBy!.SecondName == request.SecondName);
 
         if (request.WorkerType is not null)
             warehouseOperationsQueryable = warehouseOperationsQueryable
-                .Where(x => x.CreatedBy.Type == request.WorkerType);
+                .Where(x => x.CreatedBy!.Type == request.WorkerType);
 
         if (request.CreatedAt is not null)
             warehouseOperationsQueryable = warehouseOperationsQueryable
@@ -153,9 +152,66 @@ public class WarehouseOperationService : IWarehouseOperationService
         await using var context = await _wmsFactory
             .GetContextAsync(_currentCompany.CompanyId, token);
 
+        if (!await _companyValidator.EnsureUserExistsAsync(context, userId, token))
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.NotFound, "User doesn't belong to company");
 
+        var warehouseOperation = await context.WarehouseOperations
+            .Where(x => x.AssignedToId == userId)
+            .FirstOrDefaultAsync(x => x.Id == warehouseOperationId, token);
+
+        if (warehouseOperation is null)
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.NotFound, "Warehouse operation not found");
+
+        if(warehouseOperation.Status is not WarehouseOperationStatus.InProgress)
+        {
+            string postfix = warehouseOperation.Status switch
+            {
+                WarehouseOperationStatus.Completed => "already completed",
+                WarehouseOperationStatus.Cancelled => "already cancelled",
+                _ => "not in progress"
+            };
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.Conflict, $"Warehouse operation already {postfix}");
+        }
+
+        warehouseOperation.CompletedAt = DateTime.UtcNow;
+        warehouseOperation.Status = WarehouseOperationStatus.Completed;
+
+        await context.SaveChangesAsync(token);
+
+        return Result<WarehouseOperationDetailsResponse>.Success(new WarehouseOperationDetailsResponse(warehouseOperation));
     }
 
-    Task<Result<WarehouseOperationDetailsResponse>> CancelWarehouseOperationAsync(Ulid userId,
-        Ulid warehouseOperationId, CancellationToken token);
+    public async Task<Result<WarehouseOperationDetailsResponse>> CancelWarehouseOperationAsync(Ulid userId,
+        Ulid warehouseOperationId, CancellationToken token)
+    {
+        await using var context = await _wmsFactory
+          .GetContextAsync(_currentCompany.CompanyId, token);
+
+        if (!await _companyValidator.EnsureUserExistsAsync(context, userId, token))
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.NotFound, "User doesn't belong to company");
+
+        var warehouseOperation = await context.WarehouseOperations
+            .Where(x => x.AssignedToId == userId)
+            .FirstOrDefaultAsync(x => x.Id == warehouseOperationId, token);
+
+        if (warehouseOperation is null)
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.NotFound, "Warehouse operation not found");
+
+        if (warehouseOperation.Status is not WarehouseOperationStatus.InProgress)
+        {
+            string postfix = warehouseOperation.Status switch
+            {
+                WarehouseOperationStatus.Completed => "already completed",
+                WarehouseOperationStatus.Cancelled => "already cancelled",
+                _ => "not in progress"
+            };
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.Conflict, $"Warehouse operation already {postfix}");
+        }
+
+        warehouseOperation.Status = WarehouseOperationStatus.Cancelled;
+
+        await context.SaveChangesAsync(token);
+
+        return Result<WarehouseOperationDetailsResponse>.Success(new WarehouseOperationDetailsResponse(warehouseOperation));
+    }
 }
