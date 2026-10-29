@@ -6,4 +6,5 @@ public interface IProductService
 {
     Task<Result<ProductDetailsResponse>> AddProductAsync(Ulid userId, CreateProductRequest request, CancellationToken token);
     Task<Result<string>> RemoveProductAsync(Ulid userId, Ulid productId, CancellationToken token);
+    Task<Result<ProductDetailsResponse>> GetProductByIdAsync(Ulid userId, Ulid productId, CancellationToken token);
 }

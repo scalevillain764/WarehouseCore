@@ -161,7 +161,7 @@ public class ZoneService : IZoneService
             foreach(var word in lower_q_name)
             {
                 queryable_zones = queryable_zones
-                    .Where(z => z.Name.ToLower().Contains(word));
+                    .Where(z => z.Name.ToLower().Contains(word) || z.Name.ToLower() == word);
             }
         }
 
