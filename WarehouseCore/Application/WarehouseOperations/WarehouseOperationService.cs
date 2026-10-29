@@ -12,6 +12,7 @@ public class WarehouseOperationService : IWarehouseOperationService
     private readonly IWmsDbContextFactory _wmsFactory;
     private readonly ICurrentCompanyContext _currentCompany;
     private readonly ICompanyAcessValidator _companyValidator;
+
     public WarehouseOperationService(IWmsDbContextFactory wmsFactory, ICurrentCompanyContext currentCompany, ICompanyAcessValidator companyValidator)
     {
         _wmsFactory = wmsFactory;
@@ -19,7 +20,7 @@ public class WarehouseOperationService : IWarehouseOperationService
         _companyValidator = companyValidator;
     }
 
-    public async Task<Result<WarehouseOperationDetailsResponse>> CreateWarehouseOperationAsync(Ulid userId, 
+    public async Task<Result<WarehouseOperationDetailsResponse>> CreateWarehouseOperationAsync(Ulid userId, Ulid assignedToId,
         CreateWarehouseOperationRequest request, CancellationToken token)
     {
         await using var context = await _wmsFactory
@@ -31,7 +32,10 @@ public class WarehouseOperationService : IWarehouseOperationService
         if (!adminAndManagerCheck.IsSuccess)
             return Result<WarehouseOperationDetailsResponse>.Fail((ErrorType)adminAndManagerCheck.ErrorType, adminAndManagerCheck.ErrorMessage);
 
-        var warehouseOperation = new WarehouseOperation(request.Type, userId);
+        if (!await _companyValidator.EnsureUserExistsAsync(context, assignedToId, token))
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.Conflict, "Assigned user doesn't belong to company");
+
+        var warehouseOperation = new WarehouseOperation(request.Type, userId, assignedToId);
 
         context.WarehouseOperations.Add(warehouseOperation);
 
@@ -103,22 +107,28 @@ public class WarehouseOperationService : IWarehouseOperationService
                     .Contains(x.Status));
 
         if (request.CompletedAt is not null)
-            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CompletedAt == request.CompletedAt);
+            warehouseOperationsQueryable = warehouseOperationsQueryable
+                .Where(x => x.CompletedAt == request.CompletedAt);
 
         if (request.CreatedById is not null)
-            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CreatedById == request.CreatedById);
+            warehouseOperationsQueryable = warehouseOperationsQueryable
+                .Where(x => x.CreatedById == request.CreatedById);
 
         if (request.FirstName is not null)
-            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CreatedBy.FirstName == request.FirstName);
+            warehouseOperationsQueryable = warehouseOperationsQueryable
+                .Where(x => x.CreatedBy.FirstName == request.FirstName);
 
         if(request.SecondName is not null)
-            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CreatedBy.SecondName == request.SecondName);
+            warehouseOperationsQueryable = warehouseOperationsQueryable
+                .Where(x => x.CreatedBy.SecondName == request.SecondName);
 
         if (request.WorkerType is not null)
-            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CreatedBy.Type == request.WorkerType);
+            warehouseOperationsQueryable = warehouseOperationsQueryable
+                .Where(x => x.CreatedBy.Type == request.WorkerType);
 
         if (request.CreatedAt is not null)
-            warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => x.CreatedAt == request.CreatedAt);
+            warehouseOperationsQueryable = warehouseOperationsQueryable
+                .Where(x => x.CreatedAt == request.CreatedAt);
 
         int totalCount = await warehouseOperationsQueryable
             .CountAsync(token);
@@ -137,4 +147,15 @@ public class WarehouseOperationService : IWarehouseOperationService
         return Result<PagedResponse<WarehouseOperationResponse>>
             .Success(new PagedResponse<WarehouseOperationResponse>(rez, request.Page, request.PageSize, totalCount));
     }
+
+    public async Task<Result<WarehouseOperationDetailsResponse>> CompleteWarehouseOperationAsync(Ulid userId, Ulid warehouseOperationId, CancellationToken token)
+    {
+        await using var context = await _wmsFactory
+            .GetContextAsync(_currentCompany.CompanyId, token);
+
+
+    }
+
+    Task<Result<WarehouseOperationDetailsResponse>> CancelWarehouseOperationAsync(Ulid userId,
+        Ulid warehouseOperationId, CancellationToken token);
 }

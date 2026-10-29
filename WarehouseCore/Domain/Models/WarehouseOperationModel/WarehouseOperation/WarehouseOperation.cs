@@ -10,6 +10,8 @@
         public DateTime? CompletedAt { get; set; } = null;
         public Ulid CreatedById { get; init; }
         public User? CreatedBy { get; set; } = null!;
+        public Ulid AssignedToId { get; set; }
+        public User? AssignedTo { get; set; } = null;
         public ICollection<WarehouseOperationItem> Items { get; set; } = [];
 
         private WarehouseOperation()
@@ -29,7 +31,7 @@
 
             };
 
-        public WarehouseOperation(WarehouseOperationType type, Ulid createdById)
+        public WarehouseOperation(WarehouseOperationType type, Ulid createdById, Ulid assignedToId)
         {
             Id = Ulid.NewUlid();
             Type = type;
@@ -37,6 +39,7 @@
             CreatedAt = DateTime.UtcNow;
             CreatedById = createdById;
             OperationNumber = $"{GetTypePrefix(type)}-{Id}";
+            AssignedToId = assignedToId;
         }
     }
 }
