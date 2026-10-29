@@ -97,11 +97,11 @@ public class WarehouseOperationService : IWarehouseOperationService
                 x.OperationNumber == searchTerm || x.OperationNumber.Contains(searchTerm));
         }
 
-        if(request.Types is not null)
+        if(request.Types is not null && request.Types.Count > 0)
             warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => request.Types
                    .Contains(x.Type));
 
-        if (request.Statuses is not null)
+        if (request.Statuses is not null && request.Statuses.Count > 0)
             warehouseOperationsQueryable = warehouseOperationsQueryable.Where(x => request.Statuses
                     .Contains(x.Status));
 
