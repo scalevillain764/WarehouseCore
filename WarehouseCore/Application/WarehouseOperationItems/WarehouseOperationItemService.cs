@@ -43,6 +43,44 @@ public class WarehouseOperationItemService : IWarehouseOperatiomItemService
         if (product is null)
             return Result<WarehouseOperationItemsDetailsResponse>.Fail(ErrorType.NotFound, "Product not found");
 
-        var newWarehouseOperationItem = new WarehouseOperationItem()
+        var newWarehouseOperationItem = new WarehouseOperationItem(request.warehouseOperationId, request.productId, request.PlannedQuantity,
+            request.sourceBinId, request.destinationBinId);
+
+        context.WarehouseOperationItems.Add(newWarehouseOperationItem);
+
+        await context.SaveChangesAsync(token);
+
+        await context.Entry(newWarehouseOperationItem).Reference(x => x.Product).LoadAsync(token);
+        await context.Entry(newWarehouseOperationItem).Reference(x => x.SourceBin).LoadAsync(token);
+        await context.Entry(newWarehouseOperationItem).Reference(x => x.DestinationBin).LoadAsync(token);
+
+        return Result<WarehouseOperationItemsDetailsResponse>.Success(new WarehouseOperationItemsDetailsResponse(newWarehouseOperationItem));
     }
+
+    public async Task<Result<string>> RemoveWarehouseOperationItem(Ulid userId, Ulid warehouseOperationId, Ulid warehouseOperationItemId, CancellationToken token)
+    {
+        await using var context = await _wmsFactory
+          .GetContextAsync(_currentCompanyContext.CompanyId, token);
+
+        var adminAndManagerCheck = await _companyValidator.EnsureUserHasAnyRoleAsync(context, userId, "Only admins and managers can create warehouse operation",
+            new List<UserType> { UserType.Admin, UserType.Manager }, token);
+
+        if (!adminAndManagerCheck.IsSuccess)
+            return Result<string>.Fail((ErrorType)adminAndManagerCheck.ErrorType!, adminAndManagerCheck.ErrorMessage);
+
+        var warehouseOperationItem = await context.WarehouseOperationItems
+            .Where(x => x.WarehouseOperationId == warehouseOperationId)
+            .FirstOrDefaultAsync(x => x.Id == warehouseOperationItemId, token);
+
+        if (warehouseOperationItem is null)
+            return Result<string>.Fail(ErrorType.NotFound, "Warehouse operation item not found");
+
+        context.WarehouseOperationItems.Remove(warehouseOperationItem);
+
+        await context.SaveChangesAsync(token);
+
+        return Result<string>.Success("OK");
+    }
+
+
 }

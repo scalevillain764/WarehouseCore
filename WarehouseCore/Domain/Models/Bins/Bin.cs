@@ -11,6 +11,8 @@ namespace Domain.Models
         public Ulid WarehouseZoneId { get; set; }
         public WarehouseZone? Zone { get; set; } = null!;
 
+        public Ulid CompanyId { get; init; } 
+
         public required int Row { get; init; }
         public required int Section { get; init; }
         public required int Level { get; init; }
@@ -23,7 +25,7 @@ namespace Domain.Models
         public ICollection<Stock> Stocks { get; set; } = [];
 
         [SetsRequiredMembers]
-        public Bin (string binCode, int row, int section, int level, Ulid warehouseZoneId, BinTypeByCapacity type)
+        public Bin (string binCode, int row, int section, int level, Ulid CompanyId, Ulid warehouseZoneId, BinTypeByCapacity type)
         {
             Id = Ulid.NewUlid();
             BinCode = binCode;

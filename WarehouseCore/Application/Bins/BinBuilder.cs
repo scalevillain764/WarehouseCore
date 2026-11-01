@@ -4,15 +4,18 @@ using Application.Bins.Responses;
 using Infrastructure.ResponsePatterns;
 using Domain.Models;
 using Application.Bins.Requests;
+using Application.CompanyContext;
 
 namespace Application.Bins
 {
     public class BinBuilder
     {
         private readonly WmsDbContext _context;
-        public BinBuilder(WmsDbContext context)
+        private readonly ICurrentCompanyContext _currentCompany;
+        public BinBuilder(WmsDbContext context, ICurrentCompanyContext currentCompany)
         {
             _context = context;
+            _currentCompany = currentCompany;
         }
 
         // add section
@@ -44,7 +47,7 @@ namespace Application.Bins
             for(int l = 1; l <= request.levels; l++)
             {
                 string binCode = $"{zonePrefix}-{request.rowNumber:D2}-{newSection:D2}-{l:D2}";
-                var newBin = new Bin(binCode, request.rowNumber, newSection, l, request.zoneId, request.type);
+                var newBin = new Bin(binCode, request.rowNumber, newSection, l, _currentCompany.CompanyId, request.zoneId, request.type);
                 newBins.Add(newBin); 
             }
 
@@ -85,7 +88,7 @@ namespace Application.Bins
             {
                 int levelNumber = newLevel + l;
                 string binCode = $"{zonePrefix}-{request.rowNumber:D2}-{request.sectionNumber:D2}-{l:D2}";
-                var newBin = new Bin(binCode, request.rowNumber, request.sectionNumber, levelNumber, request.zoneId, request.type);
+                var newBin = new Bin(binCode, request.rowNumber, request.sectionNumber, levelNumber, _currentCompany.CompanyId, request.zoneId, request.type);
                 newBins.Add(newBin);
             }
 
@@ -120,7 +123,7 @@ namespace Application.Bins
                 for(int l = 1; l <= request.levels; l++)
                 {
                     string binCode = $"{zone.Code.Substring(0, 3)}-{newRow:D2}-{s:D2}-{l:D2}";
-                    var newBin = new Bin(binCode, newRow, s, l, request.zoneId, request.type);
+                    var newBin = new Bin(binCode, newRow, s, l, _currentCompany.CompanyId, request.zoneId, request.type);
                     newBins.Add(newBin);
                 }
             }

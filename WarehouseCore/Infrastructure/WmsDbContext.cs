@@ -12,6 +12,7 @@ namespace Infrastructure
         public DbSet<Product> Products { get; set; }
         public DbSet<WarehouseOperation> WarehouseOperations { get; set; }
         public DbSet<WarehouseOperationItem> WarehouseOperationItems { get; set; }
+        public DbSet<Stock> Stocks { get; set; }
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
             configurationBuilder.Properties<Ulid>()

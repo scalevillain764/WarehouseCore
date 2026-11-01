@@ -12,12 +12,14 @@ public class ProductService : IProductService
     private readonly IWmsDbContextFactory _wmsFactory;
     private readonly ICurrentCompanyContext _companyContext;
     private readonly ICompanyAcessValidator _companyValidator;
+
     public ProductService(IWmsDbContextFactory wmsFactory, ICurrentCompanyContext companyContext, ICompanyAcessValidator companyValidator)
     {
         _wmsFactory = wmsFactory;
         _companyContext = companyContext;
         _companyValidator = companyValidator;
     }
+
     public async Task<Result<ProductDetailsResponse>> AddProductAsync(Ulid userId, CreateProductRequest request, CancellationToken token)
     {
         await using var context = await _wmsFactory
