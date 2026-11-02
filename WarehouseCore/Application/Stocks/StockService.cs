@@ -10,22 +10,12 @@ using Domain.Models;
 namespace Application.Stocks;
 public class StockService : IStockService
 {
-    private readonly IWmsDbContextFactory _factory;
-    private readonly ICurrentCompanyContext _currentCompanyContext;
-    private readonly ICompanyAcessValidator _companyValidator;
-    public StockService(IWmsDbContextFactory factory, ICurrentCompanyContext currentCompanyContext, ICompanyAcessValidator companyValidator)
+    public async Task<Result<StockResponse>> CreateStockAsync(WmsDbContext context, CreateStockRequest request, CancellationToken token)
     {
-        _factory = factory;
-        _currentCompanyContext = currentCompanyContext;
-        _companyValidator = companyValidator;
-    }
-    public async Task<Result<StockResponse>> CreateStockAsync(Ulid userId, CreateStockRequest request, CancellationToken token)
-    {
-        await using var context = await _factory
-            .GetContextAsync(_currentCompanyContext.CompanyId, token);
+        if (request.Quantity <= 0)
+            return Result<StockResponse>.Fail(ErrorType.Validation, "Quantity incorrect");
 
         var bin = await context.Bins
-            .Include(x => x.Stocks)
             .FirstOrDefaultAsync(x => x.Id == request.BinId, token);
 
         if (bin is null)
@@ -60,11 +50,8 @@ public class StockService : IStockService
         return Result<StockResponse>.Success(new StockResponse(stock));
     }
 
-    public async Task<Result<StockResponse>> IncreaseStockQuantityAsync(Ulid userId, EditStockRequest request, CancellationToken token)
+    public async Task<Result<StockResponse>> IncreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token)
     {
-        await using var context = await _factory
-            .GetContextAsync(_currentCompanyContext.CompanyId, token);
-
         if (request.Quantity <= 0)
             return Result<StockResponse>.Fail(ErrorType.Validation, "Quantity incorrect");
 
@@ -78,7 +65,7 @@ public class StockService : IStockService
             .FirstOrDefaultAsync(x => x.Id == request.ProductId);
 
         if (product is null)
-            return Result<StockResponse>.Fail(ErrorType.NotFound, "Producgt not found");
+            return Result<StockResponse>.Fail(ErrorType.NotFound, "Product not found");
 
         var stock = await context.Stocks
             .Where(x => x.ProductId == request.ProductId)
@@ -102,11 +89,8 @@ public class StockService : IStockService
         return Result<StockResponse>.Success(new StockResponse(stock));
     }
 
-    public async Task<Result<StockResponse>> DecreaseStockQuantityAsync(Ulid userId, EditStockRequest request, CancellationToken token)
+    public async Task<Result<StockResponse>> DecreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token)
     {
-        await using var context = await _factory
-            .GetContextAsync(_currentCompanyContext.CompanyId, token);
-
         if (request.Quantity <= 0)
             return Result<StockResponse>.Fail(ErrorType.Validation, "Quantity incorrect");
 
@@ -130,6 +114,8 @@ public class StockService : IStockService
         if (stock is null)
             return Result<StockResponse>.Fail(ErrorType.NotFound, "Stock not found");
 
+        var stockResponse = new StockResponse(stock);
+
         if (request.Quantity > stock.Quantity || stock.Quantity - request.Quantity < 0)
             return Result<StockResponse>.Fail(ErrorType.Conflict, $"Incorrect quantity. Current quantity in this bib: {stock.Quantity}");
 
@@ -138,11 +124,11 @@ public class StockService : IStockService
         stock.Quantity -= request.Quantity;
         bin.CurrentWeight -= currentProductWeight;
 
-        if (stock.Quantity == 0)
+        if (stock.Quantity == 0) 
             context.Stocks.Remove(stock);
 
         await context.SaveChangesAsync(token);
 
-        return Result<StockResponse>.Success(new StockResponse(stock));
+        return Result<StockResponse>.Success(stockResponse);
     }
 }

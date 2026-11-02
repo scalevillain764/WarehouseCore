@@ -3,6 +3,7 @@ using Application.Features;
 using Application.WarehouseOperations.Requests;
 using Application.WarehouseOperations.Responses;
 using Domain.Models;
+using Application.Stocks;
 using Infrastructure.ResponsePatterns;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,12 +13,15 @@ public class WarehouseOperationService : IWarehouseOperationService
     private readonly IWmsDbContextFactory _wmsFactory;
     private readonly ICurrentCompanyContext _currentCompany;
     private readonly ICompanyAcessValidator _companyValidator;
+    private readonly IStockService _stockService;
 
-    public WarehouseOperationService(IWmsDbContextFactory wmsFactory, ICurrentCompanyContext currentCompany, ICompanyAcessValidator companyValidator)
+    public WarehouseOperationService(IWmsDbContextFactory wmsFactory, ICurrentCompanyContext currentCompany,
+        ICompanyAcessValidator companyValidator, IStockService stockService)
     {
         _wmsFactory = wmsFactory;
         _currentCompany = currentCompany;
         _companyValidator = companyValidator;
+        _stockService = stockService;
     }
 
     public async Task<Result<WarehouseOperationDetailsResponse>> CreateWarehouseOperationAsync(Ulid userId, Ulid assignedToId,
@@ -156,6 +160,7 @@ public class WarehouseOperationService : IWarehouseOperationService
             return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.NotFound, "User doesn't belong to company");
 
         var warehouseOperation = await context.WarehouseOperations
+            .Include(x => x.Items)
             .Where(x => x.AssignedToId == userId)
             .FirstOrDefaultAsync(x => x.Id == warehouseOperationId, token);
 
@@ -171,6 +176,20 @@ public class WarehouseOperationService : IWarehouseOperationService
                 _ => "not in progress"
             };
             return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.Conflict, $"Warehouse operation already {postfix}");
+        }
+
+        var type = warehouseOperation.Type;
+        var items = warehouseOperation.Items;
+
+        foreach(var item in items)
+        {
+            switch(warehouseOperation.Type)
+            {
+                case WarehouseOperationType.Transfer:
+                    {
+                        
+                    }
+            }
         }
 
         warehouseOperation.CompletedAt = DateTime.UtcNow;
