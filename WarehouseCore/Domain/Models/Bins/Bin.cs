@@ -17,8 +17,7 @@ namespace Domain.Models
         public required int Section { get; init; }
         public required int Level { get; init; }
         public BinTypeByCapacity Type { get; set; }
-        public int CurrentWeight { get; set; }
-        public bool IsOccupied { get; set; }
+        public decimal CurrentWeight { get; set; }
         public bool IsActive { get; set; }
 
         // stock
@@ -31,7 +30,6 @@ namespace Domain.Models
             BinCode = binCode;
             WarehouseZoneId = warehouseZoneId;
             CurrentWeight = 0;
-            IsOccupied = false;
             Row = row;
             Section = section;
             Level = level;
