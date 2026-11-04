@@ -7,5 +7,5 @@ public interface IWarehouseOperatiomItemService
         CreateWarehouseOperationItemsRequest request, CancellationToken token);
 
     Task<Result<string>> RemoveWarehouseOperationItem(Ulid userId, Ulid warehouseOperationId,
-        Ulid warehouseOperationItemId, CancellationToken token)
+        Ulid warehouseOperationItemId, CancellationToken token);
 }

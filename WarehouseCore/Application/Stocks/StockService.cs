@@ -134,22 +134,55 @@ public class StockService : IStockService
         if (totalStockWeight > binAvailableWeight)
             return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Not enough capacity in bin");
 
-        using var transaction = await context.Database.BeginTransactionAsync(token);
-
         if (destinationStock is null)
             destinationStock = new Stock(destinationBin.Id, request.ProductId, request.Quantity);
+        else
+            destinationStock.Quantity += request.Quantity;
 
         sourceStock.Quantity -= request.Quantity;
-        destinationStock.Quantity += request.Quantity;
         destinationBin.CurrentWeight += totalStockWeight;
-
-        await context.SaveChangesAsync(token);
-        await context.Database.CommitTransactionAsync(token);
 
         return Result<IEnumerable<StockResponse>>.Success([                
             new StockResponse(sourceStock),
             new StockResponse(destinationStock)
         ]);
+    }
+
+    public async Task<Result<StockResponse>> ReceiveStockAsync(WmsDbContext context, ReceiveStockRequest request, CancellationToken token)
+    {
+        if (request.Quantity <= 0)
+            return Result<StockResponse>.Fail(ErrorType.Validation, "Quantity incorrect");
+
+        var product = await context.Products
+            .FindAsync(request.ProductId, token);
+
+        if (product is null)
+            return Result<StockResponse>.Fail(ErrorType.NotFound, "Product not found");
+
+        var destinationBin = await context.Bins
+            .Include(x => x.Stocks)
+            .FirstOrDefaultAsync(x => x.Id == request.DestionationBinId, token);
+
+        if (destinationBin is null)
+            return Result<StockResponse>.Fail(ErrorType.NotFound, "Destionation bin not found");
+
+        Stock? destinationStock = destinationBin.Stocks
+            .FirstOrDefault(x => x.ProductId == request.ProductId);
+
+        var totalStockWeight = product.WeightPerUnit * request.Quantity;
+        var binAvailableWeight = (decimal)(int)destinationBin.Type - destinationBin.CurrentWeight;
+
+        if (totalStockWeight > binAvailableWeight)
+            return Result<StockResponse>.Fail(ErrorType.Conflict, "Not enough capacity in bin");
+
+        if (destinationStock is null)
+            destinationStock = new Stock(request.DestionationBinId, request.ProductId, request.Quantity);
+        else
+            destinationStock.Quantity += request.Quantity;
+
+        destinationBin.CurrentWeight += totalStockWeight;
+
+        return Result<StockResponse>.Success(new StockResponse(destinationStock));
     }
 
     public async Task<Result<StockResponse>> DecreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token)
@@ -180,7 +213,7 @@ public class StockService : IStockService
         var stockResponse = new StockResponse(stock);
 
         if (request.Quantity > stock.Quantity || stock.Quantity - request.Quantity < 0)
-            return Result<StockResponse>.Fail(ErrorType.Conflict, $"Incorrect quantity. Current quantity in this bib: {stock.Quantity}");
+            return Result<StockResponse>.Fail(ErrorType.Conflict, $"Incorrect quantity. Current quantity in this bin: {stock.Quantity}");
 
         var currentProductWeight = request.Quantity * product.WeightPerUnit;
 

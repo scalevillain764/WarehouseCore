@@ -5,6 +5,7 @@ using Application.WarehouseOperations.Responses;
 using Domain.Models;
 using Application.Stocks;
 using Infrastructure.ResponsePatterns;
+using Application.Stocks.Requests;
 using Microsoft.EntityFrameworkCore;
 
 namespace Application.WarehouseOperations;
@@ -181,14 +182,38 @@ public class WarehouseOperationService : IWarehouseOperationService
         var type = warehouseOperation.Type;
         var items = warehouseOperation.Items;
 
+        using var transaction = await context.Database.BeginTransactionAsync(token);
+
         foreach(var item in items)
         {
             switch(warehouseOperation.Type)
             {
                 case WarehouseOperationType.Transfer:
                     {
-                        await _stockService.IncreaseStockQuantityAsync(context, 
-                            new EditWa
+                        var transferOperation = await _stockService
+                            .TransferStockAsync(context, 
+                                new TransferStockRequest((Ulid)item.SourceBinId, 
+                                    (Ulid)item.DestinationBinId, item.ProductId, item.PlannedQuantity), 
+                                token);
+
+                        if (!transferOperation.IsSuccess)
+                            return Result<WarehouseOperationDetailsResponse>
+                                .Fail((ErrorType)transferOperation.ErrorType!, transferOperation.ErrorMessage!);
+
+                        break;
+                    }
+                case WarehouseOperationType.Receiving:
+                    {
+                        var receiveOperation = await _stockService
+                            .ReceiveStockAsync(context, 
+                                new ReceiveStockRequest(item.ProductId, (Ulid)item.DestinationBinId, item.PlannedQuantity),
+                            token);
+
+                        if (!receiveOperation.IsSuccess)
+                            return Result<WarehouseOperationDetailsResponse>
+                                .Fail((ErrorType)receiveOperation.ErrorType, receiveOperation.ErrorMessage!);
+
+                        break;
                     }
             }
         }
@@ -197,6 +222,7 @@ public class WarehouseOperationService : IWarehouseOperationService
         warehouseOperation.Status = WarehouseOperationStatus.Completed;
 
         await context.SaveChangesAsync(token);
+        await context.Database.CommitTransactionAsync(token);
 
         return Result<WarehouseOperationDetailsResponse>.Success(new WarehouseOperationDetailsResponse(warehouseOperation));
     }
