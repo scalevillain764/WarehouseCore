@@ -8,4 +8,5 @@ public interface IStockService
     Task<Result<StockResponse>> CreateStockAsync(WmsDbContext context, CreateStockRequest request, CancellationToken token);
     Task<Result<StockResponse>> IncreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token);
     Task<Result<StockResponse>> DecreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token);
+    Task<Result<IEnumerable<StockResponse>>> TransferStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token);
 }

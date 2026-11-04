@@ -187,7 +187,8 @@ public class WarehouseOperationService : IWarehouseOperationService
             {
                 case WarehouseOperationType.Transfer:
                     {
-                        
+                        await _stockService.IncreaseStockQuantityAsync(context, 
+                            new EditWa
                     }
             }
         }
