@@ -215,6 +215,32 @@ public class WarehouseOperationService : IWarehouseOperationService
 
                         break;
                     }
+                case WarehouseOperationType.Putaway:
+                    {
+                        var putawayOperation = await _stockService
+                            .PutawayStockAsync(context, new TransferStockRequest((Ulid)item.SourceBinId,
+                                    (Ulid)item.DestinationBinId, item.ProductId, item.PlannedQuantity),
+                                token);
+
+                        if(!putawayOperation.IsSuccess)
+                            return Result<WarehouseOperationDetailsResponse>
+                                .Fail((ErrorType)putawayOperation.ErrorType!, putawayOperation.ErrorMessage!);
+
+                        break;
+                    }
+                case WarehouseOperationType.Picking:
+                    {
+                        var pickingOperation = await _stockService
+                            .PickStockAsync(context, new TransferStockRequest((Ulid)item.SourceBinId,
+                                    (Ulid)item.DestinationBinId, item.ProductId, item.PlannedQuantity),
+                                token);
+
+                        if (!pickingOperation.IsSuccess)
+                            return Result<WarehouseOperationDetailsResponse>
+                                .Fail((ErrorType)pickingOperation.ErrorType!, pickingOperation.ErrorMessage!);
+
+                        break;
+                    }
             }
         }
 

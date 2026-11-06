@@ -161,10 +161,14 @@ public class StockService : IStockService
 
         var destinationBin = await context.Bins
             .Include(x => x.Stocks)
+            .Include(x => x.Zone)
             .FirstOrDefaultAsync(x => x.Id == request.DestionationBinId, token);
 
         if (destinationBin is null)
             return Result<StockResponse>.Fail(ErrorType.NotFound, "Destionation bin not found");
+
+        if (destinationBin.Zone?.Type is not WarehouseZoneType.Receiving)
+            return Result<StockResponse>.Fail(ErrorType.Forbidden, "Choose bin from receiving zone");
 
         Stock? destinationStock = destinationBin.Stocks
             .FirstOrDefault(x => x.ProductId == request.ProductId);
@@ -183,6 +187,207 @@ public class StockService : IStockService
         destinationBin.CurrentWeight += totalStockWeight;
 
         return Result<StockResponse>.Success(new StockResponse(destinationStock));
+    }
+
+    public async Task<Result<IEnumerable<StockResponse>>> SendStockToSort(WmsDbContext context, TransferStockRequest request, CancellationToken token)
+    {
+        if (request.Quantity <= 0)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Validation, "Quantity incorrect");
+
+        var product = await context.Products
+            .FindAsync(request.ProductId, token);
+
+        if (product is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Product not found");
+
+        var sourceBin = await context.Bins
+            .Include(x => x.Stocks)
+            .Include(x => x.Zone)
+            .Where(x => x.Stocks
+                    .Any(s => s.ProductId == request.ProductId))
+            .FirstOrDefaultAsync(x => x.Id == request.SourceBinId, token);
+
+        if (sourceBin is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Source bin not found");
+
+        if (sourceBin.Zone?.Type is not WarehouseZoneType.Picking)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Forbidden, "Choose bin from picking");
+
+        var destinationBin = await context.Bins
+            .Include(x => x.Stocks)
+            .Include(x => x.Zone)
+            .FirstOrDefaultAsync(x => x.Id == request.DestionationBinId, token);
+
+        if (destinationBin is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Destination bin not found");
+
+        if (destinationBin.Zone?.Type is not WarehouseZoneType.Sorting)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Choose destination bin from sorting");
+
+        var sourceStock = sourceBin.Stocks
+            .FirstOrDefault(x => x.ProductId == request.ProductId);
+
+        if (sourceStock is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Something went wrong");
+
+        if (request.Quantity > sourceStock.Quantity)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Source stock doesn't has enough product");
+
+        Stock? destinationStock = destinationBin.Stocks
+            .FirstOrDefault(x => x.ProductId == request.ProductId);
+
+        var totalStockWeight = product.WeightPerUnit * request.Quantity;
+        var binAvailableWeight = (decimal)(int)destinationBin.Type - destinationBin.CurrentWeight;
+
+        if (totalStockWeight > binAvailableWeight)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Not enough capacity in bin");
+
+        if (destinationStock is null)
+            destinationStock = new Stock(destinationBin.Id, request.ProductId, request.Quantity);
+        else
+            destinationStock.Quantity += request.Quantity;
+
+        sourceStock.Quantity -= request.Quantity;
+        destinationBin.CurrentWeight += totalStockWeight;
+
+        return Result<IEnumerable<StockResponse>>.Success([
+            new StockResponse(sourceStock),
+            new StockResponse(destinationStock)
+        ]);
+    }
+
+    public async Task<Result<IEnumerable<StockResponse>>> PickStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token)
+    {
+        if (request.Quantity <= 0)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Validation, "Quantity incorrect");
+
+        var product = await context.Products
+            .FindAsync(request.ProductId, token);
+
+        if (product is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Product not found");
+
+        var sourceBin = await context.Bins
+            .Include(x => x.Stocks)
+            .Include(x => x.Zone)
+            .Where(x => x.Stocks
+                    .Any(s => s.ProductId == request.ProductId))
+            .FirstOrDefaultAsync(x => x.Id == request.SourceBinId, token);
+
+        if (sourceBin is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Source bin not found");
+
+        if (sourceBin.Zone?.Type is not WarehouseZoneType.BulkStorage)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Forbidden, "Choose bin from bulk storage");
+
+        var destinationBin = await context.Bins
+            .Include(x => x.Stocks)
+            .Include(x => x.Zone)
+            .FirstOrDefaultAsync(x => x.Id == request.DestionationBinId, token);
+
+        if (destinationBin is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Destination bin not found");
+
+        if (destinationBin.Zone?.Type is not WarehouseZoneType.Picking)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Choose destination bin from picking");
+
+        var sourceStock = sourceBin.Stocks
+            .FirstOrDefault(x => x.ProductId == request.ProductId);
+
+        if (sourceStock is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Something went wrong");
+
+        if (request.Quantity > sourceStock.Quantity)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Source stock doesn't has enough product");
+
+        Stock? destinationStock = destinationBin.Stocks
+            .FirstOrDefault(x => x.ProductId == request.ProductId);
+
+        var totalStockWeight = product.WeightPerUnit * request.Quantity;
+        var binAvailableWeight = (decimal)(int)destinationBin.Type - destinationBin.CurrentWeight;
+
+        if (totalStockWeight > binAvailableWeight)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Not enough capacity in bin");
+
+        if (destinationStock is null)
+            destinationStock = new Stock(destinationBin.Id, request.ProductId, request.Quantity);
+        else
+            destinationStock.Quantity += request.Quantity;
+
+        sourceStock.Quantity -= request.Quantity;
+        destinationBin.CurrentWeight += totalStockWeight;
+
+        return Result<IEnumerable<StockResponse>>.Success([
+            new StockResponse(sourceStock),
+            new StockResponse(destinationStock)
+        ]);
+    }
+
+    public async Task<Result<IEnumerable<StockResponse>>> PutawayStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token)
+    {
+        if (request.Quantity <= 0)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Validation, "Quantity incorrect");
+
+        var product = await context.Products
+            .FindAsync(request.ProductId, token);
+
+        if (product is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Product not found");
+
+        var sourceBin = await context.Bins
+            .Include(x => x.Stocks)
+            .Include(x => x.Zone)
+            .Where(x => x.Stocks
+                    .Any(s => s.ProductId == request.ProductId))
+            .FirstOrDefaultAsync(x => x.Id == request.SourceBinId, token);
+
+        if (sourceBin is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Source bin not found");
+
+        if (sourceBin.Zone?.Type is not WarehouseZoneType.Receiving)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Forbidden, "Choose source bin from receiving");
+
+        var destinationBin = await context.Bins
+            .Include(x => x.Stocks)
+            .Include(x => x.Zone)
+            .FirstOrDefaultAsync(x => x.Id == request.DestionationBinId, token);
+
+        if (destinationBin is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Destination bin not found");
+
+        if (destinationBin.Zone?.Type is not WarehouseZoneType.BulkStorage)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Forbidden, "Choose destination bin from bulk storage");
+
+        var sourceStock = sourceBin.Stocks
+            .FirstOrDefault(x => x.ProductId == request.ProductId);
+
+        if (sourceStock is null)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Something went wrong");
+
+        if (request.Quantity > sourceStock.Quantity)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Source stock doesn't has enough product");
+
+        Stock? destinationStock = destinationBin.Stocks
+            .FirstOrDefault(x => x.ProductId == request.ProductId);
+
+        var totalStockWeight = product.WeightPerUnit * request.Quantity;
+        var binAvailableWeight = (decimal)(int)destinationBin.Type - destinationBin.CurrentWeight;
+
+        if (totalStockWeight > binAvailableWeight)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Not enough capacity in bin");
+
+        if (destinationStock is null)
+            destinationStock = new Stock(destinationBin.Id, request.ProductId, request.Quantity);
+        else
+            destinationStock.Quantity += request.Quantity;
+
+        sourceStock.Quantity -= request.Quantity;
+        destinationBin.CurrentWeight += totalStockWeight;
+
+        return Result<IEnumerable<StockResponse>>.Success([
+            new StockResponse(sourceStock),
+            new StockResponse(destinationStock)
+        ]);
     }
 
     public async Task<Result<StockResponse>> DecreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token)

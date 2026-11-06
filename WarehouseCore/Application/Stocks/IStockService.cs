@@ -10,4 +10,7 @@ public interface IStockService
     Task<Result<StockResponse>> DecreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token);
     Task<Result<IEnumerable<StockResponse>>> TransferStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token);
     Task<Result<StockResponse>> ReceiveStockAsync(WmsDbContext context, ReceiveStockRequest request, CancellationToken token);
+    Task<Result<IEnumerable<StockResponse>>> PickStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token);
+    Task<Result<IEnumerable<StockResponse>>> PutawayStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token);
+    Task<Result<IEnumerable<StockResponse>>> SendStockToSort(WmsDbContext context, TransferStockRequest request, CancellationToken token);
 }
