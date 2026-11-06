@@ -34,6 +34,7 @@ public class StockService : IStockService
                 $"Not enought bin capacity. Max capacity: {(int)bin.Type}, current capacity: {bin.CurrentWeight + currentProductWeight}");
 
         Stock? currentStock = await context.Stocks
+            .Where(x => x.BinId == request.BinId)
             .FirstOrDefaultAsync(x => x.ProductId == request.ProductId, token);
 
         if (currentStock is null)
@@ -43,8 +44,6 @@ public class StockService : IStockService
         
         context.Stocks.Add(currentStock);
         bin.CurrentWeight += currentProductWeight;
-
-        await context.SaveChangesAsync(token);
 
         return Result<StockResponse>.Success(new StockResponse(currentStock));
     }
@@ -56,6 +55,9 @@ public class StockService : IStockService
 
         var product = await context.Products
             .FindAsync(request.ProductId, token);
+
+        if (request.SourceBinId == request.DestionationBinId)
+            return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Choose different bins");
 
         if (product is null)
             return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Product not found");
@@ -77,6 +79,7 @@ public class StockService : IStockService
             return Result<IEnumerable<StockResponse>>.Fail(ErrorType.NotFound, "Destination bin not found");
 
         var sourceStock = sourceBin.Stocks
+            .Where(x => x.BinId == request.SourceBinId)
             .FirstOrDefault(x => x.ProductId == request.ProductId);
 
         if (sourceStock is null)
@@ -86,6 +89,7 @@ public class StockService : IStockService
             return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Source stock doesn't has enough product");
 
         Stock? destinationStock = destinationBin.Stocks
+            .Where(x => x.BinId == request.DestionationBinId)
             .FirstOrDefault(x => x.ProductId == request.ProductId);
 
         var totalStockWeight = product.WeightPerUnit * request.Quantity;
@@ -95,12 +99,19 @@ public class StockService : IStockService
             return Result<IEnumerable<StockResponse>>.Fail(ErrorType.Conflict, "Not enough capacity in bin");
 
         if (destinationStock is null)
+        {
             destinationStock = new Stock(destinationBin.Id, request.ProductId, request.Quantity);
+            context.Stocks.Add(destinationStock);
+        }
         else
             destinationStock.Quantity += request.Quantity;
 
         sourceStock.Quantity -= request.Quantity;
+        sourceBin.CurrentWeight -= totalStockWeight;
         destinationBin.CurrentWeight += totalStockWeight;
+
+        if (sourceStock.Quantity <= 0)
+            context.Stocks.Remove(sourceStock);
 
         return Result<IEnumerable<StockResponse>>.Success([                
             new StockResponse(sourceStock),
@@ -135,7 +146,7 @@ public class StockService : IStockService
 
         var stockResponse = new StockResponse(stock);
 
-        if (request.Quantity > stock.Quantity || stock.Quantity - request.Quantity < 0)
+        if (request.Quantity > stock.Quantity)
             return Result<StockResponse>.Fail(ErrorType.Conflict, $"Incorrect quantity. Current quantity in this bin: {stock.Quantity}");
 
         var currentProductWeight = request.Quantity * product.WeightPerUnit;
@@ -145,8 +156,6 @@ public class StockService : IStockService
 
         if (stock.Quantity == 0) 
             context.Stocks.Remove(stock);
-
-        await context.SaveChangesAsync(token);
 
         return Result<StockResponse>.Success(stockResponse);
     }
