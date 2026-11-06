@@ -3,14 +3,10 @@ using Application.Stocks.Requests;
 using Application.Stocks.Responses;
 using Infrastructure;
 namespace Application.Stocks;
+
 public interface IStockService
 {
-    Task<Result<StockResponse>> CreateStockAsync(WmsDbContext context, CreateStockRequest request, CancellationToken token);
-    Task<Result<StockResponse>> IncreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token);
-    Task<Result<StockResponse>> DecreaseStockQuantityAsync(WmsDbContext context, EditStockRequest request, CancellationToken token);
+    Task<Result<StockResponse>> AddStockAsync(WmsDbContext context, CreateStockRequest request, CancellationToken token);
+    Task<Result<StockResponse>> RemoveStockAsync(WmsDbContext context, EditStockRequest request, CancellationToken token);
     Task<Result<IEnumerable<StockResponse>>> TransferStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token);
-    Task<Result<StockResponse>> ReceiveStockAsync(WmsDbContext context, ReceiveStockRequest request, CancellationToken token);
-    Task<Result<IEnumerable<StockResponse>>> PickStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token);
-    Task<Result<IEnumerable<StockResponse>>> PutawayStockAsync(WmsDbContext context, TransferStockRequest request, CancellationToken token);
-    Task<Result<IEnumerable<StockResponse>>> SendStockToSort(WmsDbContext context, TransferStockRequest request, CancellationToken token);
 }

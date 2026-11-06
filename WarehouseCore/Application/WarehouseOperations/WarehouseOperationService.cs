@@ -7,6 +7,7 @@ using Application.Stocks;
 using Infrastructure.ResponsePatterns;
 using Application.Stocks.Requests;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace Application.WarehouseOperations;
 public class WarehouseOperationService : IWarehouseOperationService
@@ -204,21 +205,21 @@ public class WarehouseOperationService : IWarehouseOperationService
                     }
                 case WarehouseOperationType.Receiving:
                     {
-                        var receiveOperation = await _stockService
-                            .ReceiveStockAsync(context, 
-                                new ReceiveStockRequest(item.ProductId, (Ulid)item.DestinationBinId, item.PlannedQuantity),
+                        var addStockOperation = await _stockService
+                            .AddStockAsync(context, 
+                            new CreateStockRequest((Ulid)item.DestinationBinId!, item.ProductId, item.PlannedQuantity), 
                             token);
 
-                        if (!receiveOperation.IsSuccess)
+                        if (!addStockOperation.IsSuccess)
                             return Result<WarehouseOperationDetailsResponse>
-                                .Fail((ErrorType)receiveOperation.ErrorType, receiveOperation.ErrorMessage!);
+                                .Fail((ErrorType)addStockOperation.ErrorType, addStockOperation.ErrorMessage!);
 
                         break;
                     }
                 case WarehouseOperationType.Putaway:
                     {
                         var putawayOperation = await _stockService
-                            .PutawayStockAsync(context, new TransferStockRequest((Ulid)item.SourceBinId,
+                            .TransferStockAsync(context, new TransferStockRequest((Ulid)item.SourceBinId,
                                     (Ulid)item.DestinationBinId, item.ProductId, item.PlannedQuantity),
                                 token);
 
@@ -231,13 +232,26 @@ public class WarehouseOperationService : IWarehouseOperationService
                 case WarehouseOperationType.Picking:
                     {
                         var pickingOperation = await _stockService
-                            .PickStockAsync(context, new TransferStockRequest((Ulid)item.SourceBinId,
+                            .TransferStockAsync(context, new TransferStockRequest((Ulid)item.SourceBinId,
                                     (Ulid)item.DestinationBinId, item.ProductId, item.PlannedQuantity),
                                 token);
 
                         if (!pickingOperation.IsSuccess)
                             return Result<WarehouseOperationDetailsResponse>
                                 .Fail((ErrorType)pickingOperation.ErrorType!, pickingOperation.ErrorMessage!);
+
+                        break;
+                    }
+                case WarehouseOperationType.Shipping:
+                    {
+                        var removeStockOperation = await _stockService
+                            .RemoveStockAsync(context, 
+                                new EditStockRequest((Ulid)item.SourceBinId, item.ProductId, item.PlannedQuantity), 
+                                token);
+
+                        if (!removeStockOperation.IsSuccess)
+                            return Result<WarehouseOperationDetailsResponse>
+                                .Fail((ErrorType)removeStockOperation.ErrorType, removeStockOperation.ErrorMessage!);
 
                         break;
                     }
