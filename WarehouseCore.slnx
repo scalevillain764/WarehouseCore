@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="WarehouseCore.Tests/WarehouseCore.Tests.csproj" />
   <Project Path="WarehouseCore/WarehouseCore.csproj" />
 </Solution>

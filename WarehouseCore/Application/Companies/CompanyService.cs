@@ -29,14 +29,14 @@ public class CompanyService : ICompanyService
         await using var context = await _wmsContextFactory
             .GetContextAsync(_companyContext.CompanyId, token);
 
+        if (!await _companyValidator.EnsureUserExistsAsync(context, userId, token))
+            return Result<CompanyResponse>.Fail(ErrorType.Conflict, "User doesn't belong to company");
+
         var company = await _registryDbContext.Companies         
             .FindAsync(_companyContext.CompanyId, token);
 
         if (company is null)
             return Result<CompanyResponse>.Fail(ErrorType.NotFound, "Company not found");
-
-        if (!await _companyValidator.EnsureUserExistsAsync(context, userId, token))
-            return Result<CompanyResponse>.Fail(ErrorType.Conflict, "User doesn't belong to company");
 
         return Result<CompanyResponse>.Success(new CompanyResponse(company));
     }
