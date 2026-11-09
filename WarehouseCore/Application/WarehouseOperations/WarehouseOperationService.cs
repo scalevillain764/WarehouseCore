@@ -195,7 +195,7 @@ public class WarehouseOperationService : IWarehouseOperationService
                             .TransferStockAsync(context, 
                                 new TransferStockRequest((Ulid)item.SourceBinId, 
                                     (Ulid)item.DestinationBinId, item.ProductId, item.PlannedQuantity), 
-                                token);
+                                        token);
 
                         if (!transferOperation.IsSuccess)
                             return Result<WarehouseOperationDetailsResponse>
@@ -207,8 +207,8 @@ public class WarehouseOperationService : IWarehouseOperationService
                     {
                         var addStockOperation = await _stockService
                             .AddStockAsync(context, 
-                            new CreateStockRequest((Ulid)item.DestinationBinId!, item.ProductId, item.PlannedQuantity), 
-                            token);
+                                new CreateStockRequest((Ulid)item.DestinationBinId!, item.ProductId, item.PlannedQuantity), 
+                                    token);
 
                         if (!addStockOperation.IsSuccess)
                             return Result<WarehouseOperationDetailsResponse>
@@ -221,7 +221,7 @@ public class WarehouseOperationService : IWarehouseOperationService
                         var putawayOperation = await _stockService
                             .TransferStockAsync(context, new TransferStockRequest((Ulid)item.SourceBinId,
                                     (Ulid)item.DestinationBinId, item.ProductId, item.PlannedQuantity),
-                                token);
+                                        token);
 
                         if(!putawayOperation.IsSuccess)
                             return Result<WarehouseOperationDetailsResponse>
@@ -234,7 +234,7 @@ public class WarehouseOperationService : IWarehouseOperationService
                         var pickingOperation = await _stockService
                             .TransferStockAsync(context, new TransferStockRequest((Ulid)item.SourceBinId,
                                     (Ulid)item.DestinationBinId, item.ProductId, item.PlannedQuantity),
-                                token);
+                                        token);
 
                         if (!pickingOperation.IsSuccess)
                             return Result<WarehouseOperationDetailsResponse>
@@ -244,15 +244,11 @@ public class WarehouseOperationService : IWarehouseOperationService
                     }
                 case WarehouseOperationType.Shipping:
                     {
-                        var removeStockOperation = await _stockService
+
+                        var shippingOperation = await _stockService
                             .RemoveStockAsync(context, 
-                                new EditStockRequest((Ulid)item.SourceBinId, item.ProductId, item.PlannedQuantity), 
-                                token);
-
-                        if (!removeStockOperation.IsSuccess)
-                            return Result<WarehouseOperationDetailsResponse>
-                                .Fail((ErrorType)removeStockOperation.ErrorType, removeStockOperation.ErrorMessage!);
-
+                                new EditStockRequest((Ulid)item.SourceBinId, (Ulid)item.ProductId, item.PlannedQuantity), 
+                                    token);
                         break;
                     }
             }
