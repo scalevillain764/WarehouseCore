@@ -33,13 +33,16 @@ namespace WarehouseCore.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<int>("CurrentWeight")
-                        .HasColumnType("integer");
+                    b.Property<string>("CompanyId")
+                        .IsRequired()
+                        .HasMaxLength(26)
+                        .HasColumnType("character(26)")
+                        .IsFixedLength();
+
+                    b.Property<decimal>("CurrentWeight")
+                        .HasColumnType("numeric");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsOccupied")
                         .HasColumnType("boolean");
 
                     b.Property<int>("Level")
@@ -65,6 +68,33 @@ namespace WarehouseCore.Infrastructure.Migrations
                     b.HasIndex("WarehouseZoneId");
 
                     b.ToTable("Bins");
+                });
+
+            modelBuilder.Entity("Domain.Models.Company", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(26)
+                        .HasColumnType("character(26)")
+                        .IsFixedLength();
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SchemaName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Company");
                 });
 
             modelBuilder.Entity("Domain.Models.Product", b =>
@@ -137,7 +167,7 @@ namespace WarehouseCore.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("Stock");
+                    b.ToTable("Stocks");
                 });
 
             modelBuilder.Entity("Domain.Models.User", b =>
@@ -204,12 +234,21 @@ namespace WarehouseCore.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("Warehouses");
                 });
 
             modelBuilder.Entity("Domain.Models.WarehouseOperation", b =>
                 {
                     b.Property<string>("Id")
+                        .HasMaxLength(26)
+                        .HasColumnType("character(26)")
+                        .IsFixedLength();
+
+                    b.Property<string>("AssignedToId")
+                        .IsRequired()
                         .HasMaxLength(26)
                         .HasColumnType("character(26)")
                         .IsFixedLength();
@@ -227,6 +266,7 @@ namespace WarehouseCore.Infrastructure.Migrations
                         .IsFixedLength();
 
                     b.Property<string>("OperationNumber")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<int>("Status")
@@ -236,6 +276,8 @@ namespace WarehouseCore.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssignedToId");
 
                     b.HasIndex("CreatedById");
 
@@ -396,11 +438,19 @@ namespace WarehouseCore.Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Models.WarehouseOperation", b =>
                 {
+                    b.HasOne("Domain.Models.User", "AssignedTo")
+                        .WithMany()
+                        .HasForeignKey("AssignedToId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Domain.Models.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("AssignedTo");
 
                     b.Navigation("CreatedBy");
                 });

@@ -67,7 +67,7 @@ public class AuthService : IAuthService
         catch (Exception ex)
         {
             await _registryContext.Database
-                .ExecuteSqlRawAsync($"DROP SCHEMA {quotedSchemaName} CASCADE", token);
+                .ExecuteSqlAsync($"DROP SCHEMA {quotedSchemaName} CASCADE", token);
 
             _registryContext.Remove(newCompany);
             await _registryContext.SaveChangesAsync(token);
