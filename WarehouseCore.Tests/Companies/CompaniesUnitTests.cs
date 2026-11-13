@@ -76,11 +76,36 @@ public class CompaniesUnitTests : IAsyncLifetime
         await Task.CompletedTask;
     }
 
+    // Helpers
+    private void SetNewCompanySettings(Ulid newCompanyId)
+    {
+        _companyContextMock
+          .SetupGet(x => x.CompanyId)
+              .Returns(newCompanyId);
+
+        _factoryMock
+            .Setup(x => x.GetContextAsync(newCompanyId, CancellationToken.None))
+                .ReturnsAsync(_wmsDbContext);
+    }    
     // Get current company
 
     [Fact]
     public async Task GetCurrentCompanyAsync_CompanyDoesntExist_ReturnFailure()
     {
+        var newCompany = new Company("a", "b");;
+
+        SetNewCompanySettings(newCompany.Id);
+
+        _validatorMock
+            .Setup(x => x.EnsureUserExistsAsync(_wmsDbContext, _userId, CancellationToken.None))
+            .ReturnsAsync(true);
+
+        var result = await _companyService
+            .GetCurrentCompanyAsync(_userId, CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Data);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
     }
 
     [Fact]
@@ -91,13 +116,7 @@ public class CompaniesUnitTests : IAsyncLifetime
 
         await _registryDbContext.SaveChangesAsync(CancellationToken.None);
 
-        _companyContextMock
-            .SetupGet(x => x.CompanyId)
-                .Returns(newCompany.Id);
-
-        _factoryMock.
-            Setup(x => x.GetContextAsync(newCompany.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_wmsDbContext);
+        SetNewCompanySettings(newCompany.Id);
 
         var result = await _companyService
             .GetCurrentCompanyAsync(_userId, CancellationToken.None);
@@ -116,6 +135,43 @@ public class CompaniesUnitTests : IAsyncLifetime
             Times.Once);
     }
 
+    [Fact]
+    public async Task GetCurrentCompanyAsync_UserDoesntBelongToCompany_ReturnFailure()
+    {
+        var newCompany = new Company("OOO Коммунарка", "KMN");
+        _registryDbContext.Companies.Add(newCompany);
+
+        await _registryDbContext.SaveChangesAsync(CancellationToken.None);
+
+        SetNewCompanySettings(newCompany.Id);
+
+        _validatorMock
+            .Setup(x => x.EnsureUserExistsAsync(_wmsDbContext, _userId, CancellationToken.None))
+            .ReturnsAsync(false);
+
+        var rez = await _companyService
+            .GetCurrentCompanyAsync(_userId, CancellationToken.None);
+
+        Assert.False(rez.IsSuccess);
+        Assert.Equal(ErrorType.Conflict, rez.ErrorType);
+        Assert.Null(rez.Data);
+    }
+
+   /* [Fact]
+    public async Task GetCurrentCompany_ContextCreationFailure_ThrowInvalidOperation()
+    {
+        _factoryMock
+            .Setup(x => x.GetContextAsync(Ulid.NewUlid(), CancellationToken.None))
+            .ThrowsAsync(new InvalidOperationException("Company not found"));
+
+        _companyContextMock
+            .SetupGet(x => x.CompanyId)
+            .Returns(Ulid.NewUlid());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            async () => await _companyService.GetCurrentCompanyAsync(_userId, CancellationToken.None));
+    }*/
+
     // Edit current company
 
     [Fact]
@@ -126,19 +182,13 @@ public class CompaniesUnitTests : IAsyncLifetime
 
         await _registryDbContext.SaveChangesAsync(CancellationToken.None);
 
-        _companyContextMock
-            .SetupGet(x => x.CompanyId)
-                .Returns(newCompany.Id);
-
-        _factoryMock.
-            Setup(x => x.GetContextAsync(newCompany.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_wmsDbContext);
+        SetNewCompanySettings(newCompany.Id);
 
         string error_msg = "Only admin can edit company properties";
 
         _validatorMock
             .Setup(x => 
-                x.EnsureUserIsAdminAsync(_wmsDbContext, _userId, error_msg, It.IsAny<CancellationToken>()))
+                x.EnsureUserIsAdminAsync(_wmsDbContext, _userId, error_msg, CancellationToken.None))
             .ReturnsAsync(Result<User>.Fail(ErrorType.NotFound, error_msg));
 
         var result = await _companyService.EditCurrentCompanyAsync(_userId,
@@ -146,27 +196,56 @@ public class CompaniesUnitTests : IAsyncLifetime
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
-        Assert.Equal(newCompany.Id, result.Data?.Id);
 
         _validatorMock.Verify(
-           x => x.EnsureUserExistsAsync(
+           x => x.EnsureUserIsAdminAsync(
                _wmsDbContext,
                _userId,
+               error_msg,
                It.IsAny<CancellationToken>()),
            Times.Once);
     }
 
     [Fact]
+    public async Task EditCurrentCompany_SameCompanyNameExists_ReturnFailure()
+    {
+        var company_one = new Company("a1", "b");
+        var company_two = new Company("a2", "c");
+
+        _registryDbContext.Companies.Add(company_one);
+        _registryDbContext.Companies.Add(company_two);
+
+        await _registryDbContext.SaveChangesAsync(CancellationToken.None);
+
+        SetNewCompanySettings(company_two.Id);
+
+        _validatorMock
+            .Setup(x =>
+                x.EnsureUserIsAdminAsync(_wmsDbContext, _userId, string.Empty, CancellationToken.None))
+            .ReturnsAsync(Result<User>.Success(new User("example", company_two.Id)));
+
+        var result = await _companyService
+            .EditCurrentCompanyAsync(_userId, new Application.Companies.Requests.EditCompanyRequest("a1"), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Data);
+        Assert.Equal(ErrorType.Conflict, result.ErrorType);
+
+        _validatorMock.Verify(
+         x => x.EnsureUserIsAdminAsync(
+             _wmsDbContext,
+             _userId,
+             string.Empty,
+             It.IsAny<CancellationToken>()),
+         Times.Once);
+    }
+
+    [Fact]
     public async Task EditCurrentCompanyAsync_CompanyDoesntExist_ReturnFailure()
     {
-        _companyContextMock
-            .SetupGet(x => x.CompanyId)
-                .Returns(Ulid.NewUlid());
+        var newCompany = new Company("a", "b");
 
-        _factoryMock.
-            Setup(x => x
-                .GetContextAsync(Ulid.NewUlid(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_wmsDbContext);
+        SetNewCompanySettings(newCompany.Id);
 
         var result = await _companyService.EditCurrentCompanyAsync(_userId,
             new Application.Companies.Requests.EditCompanyRequest("example"), CancellationToken.None);

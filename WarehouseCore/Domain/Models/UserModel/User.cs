@@ -1,4 +1,6 @@
-﻿namespace Domain.Models
+﻿using Microsoft.AspNetCore.Identity;
+
+namespace Domain.Models
 {
     public class User
     {
@@ -12,6 +14,21 @@
         public UserType Type { get; set; }
         // company
         public Ulid CompanyId { get; set; }
+
+        // Tests
+        public User(string firstName, Ulid companyId)
+        {
+            Id = Ulid.NewUlid();
+            CompanyId = Ulid.NewUlid();
+            FirstName = firstName;
+            SecondName = string.Empty;
+            Type = UserType.Admin;
+            Email = string.Empty;
+            PasswordHash = null;
+            RefreshTokenHash = null;
+            RefreshTokenExpiersAt = null;
+            CompanyId = companyId;
+        }
 
         public User(UserType type, string firstName, string secondName, string email, string? passwordHash, string? refreshTokenHash, DateTime? refreshTokenExpiersAt, Ulid companyId)
         {
