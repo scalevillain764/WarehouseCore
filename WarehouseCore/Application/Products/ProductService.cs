@@ -75,24 +75,25 @@ public class ProductService : IProductService
         await using var context = await _wmsFactory
           .GetContextAsync(_companyContext.CompanyId, token);
 
-        var product = await context.Products
+        var entity = await context.Products
             .AsNoTracking()
-            .Select(x => new ProductDetailsResponse(
-                x.Id,
-                x.Name,
-                x.Description,
-                x.Category.ToString(),
-                x.Brand.ToString(),
-                x.IsActive,
-                x.UnitOfMeasure.ToString(),
-                x.WeightPerUnit,
-                x.Color,
-                x.SKU
-             ))
-            .FirstOrDefaultAsync(x => x.Id == userId, token);
+            .FirstOrDefaultAsync(x => x.Id == productId, token);
 
-        if (product is null)
+        if (entity is null)
             return Result<ProductDetailsResponse>.Fail(ErrorType.NotFound, "Product not found");
+
+        var product = new ProductDetailsResponse(
+            entity.Id,
+            entity.Name,
+            entity.Description,
+            entity.Category.ToString(),
+            entity.Brand.ToString(),
+            entity.IsActive,
+            entity.UnitOfMeasure.ToString(),
+            entity.WeightPerUnit,
+            entity.Color,
+            entity.SKU
+        );
 
         return Result<ProductDetailsResponse>.Success(product);
     }
@@ -127,7 +128,7 @@ public class ProductService : IProductService
                 
             foreach(var w in description_words)
             {
-                products_queryable.Where(x => x.Description != null && (x.Description.ToLower().Contains(w)
+                products_queryable = products_queryable.Where(x => x.Description != null && (x.Description.ToLower().Contains(w)
                 || x.Description.ToLower() == w));
             }
         }
