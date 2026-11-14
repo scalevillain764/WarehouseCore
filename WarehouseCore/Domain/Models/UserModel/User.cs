@@ -19,15 +19,14 @@ namespace Domain.Models
         public User(string firstName, Ulid companyId)
         {
             Id = Ulid.NewUlid();
-            CompanyId = Ulid.NewUlid();
+            CompanyId = companyId;
             FirstName = firstName;
             SecondName = string.Empty;
             Type = UserType.Admin;
             Email = string.Empty;
-            PasswordHash = null;
-            RefreshTokenHash = null;
+            PasswordHash = string.Empty;
+            RefreshTokenHash = string.Empty;
             RefreshTokenExpiersAt = null;
-            CompanyId = companyId;
         }
 
         public User(UserType type, string firstName, string secondName, string email, string? passwordHash, string? refreshTokenHash, DateTime? refreshTokenExpiersAt, Ulid companyId)

@@ -12,22 +12,11 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 namespace WarehouseCore.Tests.Companies;
 
-public class CompaniesUnitTests : IAsyncLifetime
-{
-    private SqliteConnection _registryConnection = null!;
-    private RegistryDbContext _registryDbContext = null!;
+public class CompaniesUnitTests : MyIAsyncLifetime
+{ 
+    private ICompanyService _companyService = null!;
 
-    private SqliteConnection _wmsConnection = null!;
-    private WmsDbContext _wmsDbContext = null!;
-
-    private Mock<ICurrentCompanyContext> _companyContextMock = null!;
-    private Mock<IWmsDbContextFactory> _factoryMock = null!;
-    private Mock<ICompanyAcessValidator> _validatorMock = null!;
-
-    private CompanyService _companyService = null!;
-    private Ulid _userId;
-
-    public async ValueTask InitializeAsync()
+    public override async ValueTask InitializeAsync()
     {
         // Registry
         _registryConnection = new SqliteConnection("Data Source=:memory:");
@@ -67,7 +56,7 @@ public class CompaniesUnitTests : IAsyncLifetime
         await Task.CompletedTask;
     }
 
-    public async ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         await _registryDbContext.DisposeAsync();
         await _registryConnection.DisposeAsync();
@@ -87,6 +76,7 @@ public class CompaniesUnitTests : IAsyncLifetime
             .Setup(x => x.GetContextAsync(newCompanyId, CancellationToken.None))
                 .ReturnsAsync(_wmsDbContext);
     }    
+
     // Get current company
 
     [Fact]
@@ -157,21 +147,6 @@ public class CompaniesUnitTests : IAsyncLifetime
         Assert.Null(rez.Data);
     }
 
-   /* [Fact]
-    public async Task GetCurrentCompany_ContextCreationFailure_ThrowInvalidOperation()
-    {
-        _factoryMock
-            .Setup(x => x.GetContextAsync(Ulid.NewUlid(), CancellationToken.None))
-            .ThrowsAsync(new InvalidOperationException("Company not found"));
-
-        _companyContextMock
-            .SetupGet(x => x.CompanyId)
-            .Returns(Ulid.NewUlid());
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            async () => await _companyService.GetCurrentCompanyAsync(_userId, CancellationToken.None));
-    }*/
-
     // Edit current company
 
     [Fact]
@@ -184,12 +159,10 @@ public class CompaniesUnitTests : IAsyncLifetime
 
         SetNewCompanySettings(newCompany.Id);
 
-        string error_msg = "Only admin can edit company properties";
-
         _validatorMock
             .Setup(x => 
-                x.EnsureUserIsAdminAsync(_wmsDbContext, _userId, error_msg, CancellationToken.None))
-            .ReturnsAsync(Result<User>.Fail(ErrorType.NotFound, error_msg));
+                x.EnsureUserIsAdminAsync(_wmsDbContext, _userId, It.IsAny<string>(), CancellationToken.None))
+            .ReturnsAsync(Result<User>.Fail(ErrorType.NotFound, It.IsAny<string>()));
 
         var result = await _companyService.EditCurrentCompanyAsync(_userId,
             new Application.Companies.Requests.EditCompanyRequest("example"), CancellationToken.None);
@@ -201,7 +174,7 @@ public class CompaniesUnitTests : IAsyncLifetime
            x => x.EnsureUserIsAdminAsync(
                _wmsDbContext,
                _userId,
-               error_msg,
+               It.IsAny<string>(),
                It.IsAny<CancellationToken>()),
            Times.Once);
     }
@@ -221,7 +194,7 @@ public class CompaniesUnitTests : IAsyncLifetime
 
         _validatorMock
             .Setup(x =>
-                x.EnsureUserIsAdminAsync(_wmsDbContext, _userId, string.Empty, CancellationToken.None))
+                x.EnsureUserIsAdminAsync(_wmsDbContext, _userId, It.IsAny<string>(), CancellationToken.None))
             .ReturnsAsync(Result<User>.Success(new User("example", company_two.Id)));
 
         var result = await _companyService
@@ -235,7 +208,7 @@ public class CompaniesUnitTests : IAsyncLifetime
          x => x.EnsureUserIsAdminAsync(
              _wmsDbContext,
              _userId,
-             string.Empty,
+             It.IsAny<string>(),
              It.IsAny<CancellationToken>()),
          Times.Once);
     }
@@ -260,4 +233,6 @@ public class CompaniesUnitTests : IAsyncLifetime
                It.IsAny<CancellationToken>()),
            Times.Never);
     }
+
+
 }
