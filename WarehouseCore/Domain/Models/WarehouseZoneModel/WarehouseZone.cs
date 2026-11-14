@@ -16,7 +16,7 @@ namespace Domain.Models
         public Warehouse? Warehouse { get; set; } = null!;
 
         // bin
-        public IEnumerable<Bin> Bins { get; set; } = [];
+        public ICollection<Bin> Bins { get; set; } = new List<Bin>();
 
         private string BuildCode()
         {

@@ -12,7 +12,7 @@
         public Ulid CompanyId { get; set; }
 
         // warehouse zones
-        public IEnumerable<WarehouseZone> Zones { get; set; } = [];
+        public ICollection<WarehouseZone> Zones { get; set; } = new List<WarehouseZone>();
         private Warehouse() // ef
         {
             Name = null!;

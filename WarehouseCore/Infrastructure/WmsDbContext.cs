@@ -10,6 +10,7 @@ namespace Infrastructure
         public DbSet<Warehouse> Warehouses { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<WarehouseZone> WarehouseZones { get; set; }
         public DbSet<WarehouseOperation> WarehouseOperations { get; set; }
         public DbSet<WarehouseOperationItem> WarehouseOperationItems { get; set; }
         public DbSet<Stock> Stocks { get; set; }

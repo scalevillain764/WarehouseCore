@@ -37,12 +37,14 @@ public class StockService : IStockService
             .Where(x => x.BinId == request.BinId)
             .FirstOrDefaultAsync(x => x.ProductId == request.ProductId, token);
 
-        if (currentStock is null)
+        if (currentStock is null) {
             currentStock = new Stock(bin.Id, request.ProductId, request.Quantity);
+            context.Stocks.Add(currentStock);
+        }
         else
             currentStock.Quantity += request.Quantity;
         
-        context.Stocks.Add(currentStock);
+
         bin.CurrentWeight += currentProductWeight;
 
         return Result<StockResponse>.Success(new StockResponse(currentStock));
