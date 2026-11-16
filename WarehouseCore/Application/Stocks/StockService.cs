@@ -44,7 +44,6 @@ public class StockService : IStockService
         else
             currentStock.Quantity += request.Quantity;
         
-
         bin.CurrentWeight += currentProductWeight;
 
         return Result<StockResponse>.Success(new StockResponse(currentStock));
@@ -136,7 +135,7 @@ public class StockService : IStockService
             .FirstOrDefaultAsync(x => x.Id == request.ProductId, token);
 
         if (product is null)
-            return Result<StockResponse>.Fail(ErrorType.NotFound, "Producgt not found");
+            return Result<StockResponse>.Fail(ErrorType.NotFound, "Product not found");
 
         var stock = await context.Stocks
             .Where(x => x.ProductId == request.ProductId)

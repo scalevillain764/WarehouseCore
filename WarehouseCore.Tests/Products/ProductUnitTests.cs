@@ -17,7 +17,7 @@ namespace WarehouseCore.Tests.Products;
 
 public class ProductUnitTests : MyIAsyncLifetime
 {
-    private IProductService _productService;
+    private ProductService _productService = null;
 
     public override async ValueTask InitializeAsync()
     {

@@ -14,7 +14,7 @@ namespace WarehouseCore.Tests.Companies;
 
 public class CompaniesUnitTests : MyIAsyncLifetime
 { 
-    private ICompanyService _companyService = null!;
+    private CompanyService _companyService = null!;
 
     public override async ValueTask InitializeAsync()
     {
