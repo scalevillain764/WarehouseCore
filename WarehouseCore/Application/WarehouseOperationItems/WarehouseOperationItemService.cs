@@ -1,6 +1,7 @@
 ﻿using Application.CompanyContext;
 using Application.Features;
 using Application.WarehouseOperationItems.Responses;
+using Application.WarehouseOperationItems.Requests;
 using Application.WarehouseOperations.Responses;
 using Domain.Models;
 using Infrastructure.ResponsePatterns;
@@ -25,7 +26,7 @@ public class WarehouseOperationItemService : IWarehouseOperatiomItemService
         await using var context = await _wmsFactory
             .GetContextAsync(_currentCompanyContext.CompanyId, token);
 
-        var adminAndManagerCheck = await _companyValidator.EnsureUserHasAnyRoleAsync(context, userId, "Only admins and managers can create warehouse operation",
+        var adminAndManagerCheck = await _companyValidator.EnsureUserHasAnyRoleAsync(context, userId, "Only admins and managers can create warehouse operation item",
             new List<UserType> { UserType.Admin, UserType.Manager }, token);
 
         if (!adminAndManagerCheck.IsSuccess)
@@ -62,7 +63,7 @@ public class WarehouseOperationItemService : IWarehouseOperatiomItemService
         await using var context = await _wmsFactory
           .GetContextAsync(_currentCompanyContext.CompanyId, token);
 
-        var adminAndManagerCheck = await _companyValidator.EnsureUserHasAnyRoleAsync(context, userId, "Only admins and managers can create warehouse operation",
+        var adminAndManagerCheck = await _companyValidator.EnsureUserHasAnyRoleAsync(context, userId, "Only admins and managers can remove warehouse operation item",
             new List<UserType> { UserType.Admin, UserType.Manager }, token);
 
         if (!adminAndManagerCheck.IsSuccess)

@@ -1,5 +1,6 @@
 ﻿using Application.WarehouseOperationItems.Responses;
 using Infrastructure.ResponsePatterns;
+using Application.WarehouseOperationItems.Requests;
 namespace Application.WarehouseOperationItems;
 public interface IWarehouseOperatiomItemService
 {

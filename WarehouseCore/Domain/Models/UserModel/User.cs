@@ -29,6 +29,20 @@ namespace Domain.Models
             RefreshTokenExpiersAt = null;
         }
 
+        public User(Ulid id, string firstName, Ulid companyId, UserType type)
+        {
+            Id = id;
+            CompanyId = companyId;
+            FirstName = firstName;
+            SecondName = string.Empty;
+            Type = type;
+            Email = string.Empty;
+            PasswordHash = string.Empty;
+            RefreshTokenHash = string.Empty;
+            RefreshTokenExpiersAt = null;
+        }
+
+        // Main
         public User(UserType type, string firstName, string secondName, string email, string? passwordHash, string? refreshTokenHash, DateTime? refreshTokenExpiersAt, Ulid companyId)
         {
             Id = Ulid.NewUlid();

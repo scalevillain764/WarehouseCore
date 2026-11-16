@@ -1,4 +1,4 @@
-﻿namespace Application.WarehouseOperationItems;
+﻿namespace Application.WarehouseOperationItems.Requests;
 public sealed record CreateWarehouseOperationItemsRequest(
     Ulid warehouseOperationId,
     Ulid productId,
