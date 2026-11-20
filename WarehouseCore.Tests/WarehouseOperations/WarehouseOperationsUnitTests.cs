@@ -1,4 +1,4 @@
-﻿using Application.CompanyContext;
+﻿/*using Application.CompanyContext;
 using Application.Features;
 using Application.Stocks;
 using Application.WarehouseOperations;
@@ -66,137 +66,7 @@ public class WarehouseOperationsUnitTests : MyIAsyncLifetime
 
         await Task.CompletedTask;
     }
-    private async Task<Company> AddCompany()
-    {
-        var company = new Company("company1", "CM1");
-
-        _registryDbContext.Companies.Add(company);
-        await _registryDbContext.SaveChangesAsync(CancellationToken.None);
-
-        return company;
-    }
-   
-    private async Task<Product> AddProduct(int weightPerUnit = 10)
-    {
-        var product = new Product(
-            "Example_product",
-            "Example_description",
-            ProductCategory.AudioDevices,
-            "HyperX",
-            UnitOfMeasure.Set,
-            weightPerUnit,
-            "Black");
-
-        _wmsDbContext.Products.Add(product);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return product;
-    }
-
-    private async Task<User> AddUser(Ulid id, Ulid companyId, string firstName, UserType type)
-    {
-        var user = new User(id, firstName, companyId, type);
-        _wmsDbContext.Users.Add(user);
-        await _wmsDbContext.SaveChangesAsync(CancellationToken.None);
-        return user;
-    }
-
-    private async Task<Warehouse> AddWarehouse(Ulid companyId)
-    {
-        var warehouse = new Warehouse(
-            $"warehouse_{Ulid.NewUlid()}",
-            new Address("Belarus", "Minsk", "Nesterova", "92"),
-            companyId);
-
-        _wmsDbContext.Warehouses.Add(warehouse);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return warehouse;
-    }
-
-    private async Task<WarehouseZone> AddWarehouseZone(Ulid warehouseId)
-    {
-        var zone = new WarehouseZone(
-            "Picking",
-            "Example",
-            warehouseId,
-            WarehouseZoneType.Picking);
-
-        _wmsDbContext.WarehouseZones.Add(zone);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return zone;
-    }
-
-    private async Task<Bin> AddBin(
-        Ulid companyId,
-        Ulid warehouseZoneId,
-        int binNumber = 1,
-        BinTypeByCapacity capacity = BinTypeByCapacity.Heavy)
-    {
-        var bin = new Bin(
-            $"PCK-01-01-{binNumber:D2}",
-            1,
-            1,
-            binNumber,
-            companyId,
-            warehouseZoneId,
-            capacity);
-
-        _wmsDbContext.Bins.Add(bin);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return bin;
-    }
-
-    private async Task<Stock> AddStock(
-        Bin bin,
-        Product product,
-        int quantity)
-    {
-        var stock = new Stock(bin.Id, product.Id, quantity);
-
-        bin.CurrentWeight += quantity * product.WeightPerUnit;
-
-        _wmsDbContext.Stocks.Add(stock);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return stock;
-    }
-
-    private void SetValidatorMockSuccess(
-        IReadOnlyCollection<UserType> types,
-        Ulid companyId)
-    {
-        _validatorMock
-            .Setup(x => x.EnsureUserHasAnyRoleAsync(
-                _wmsDbContext,
-                _userId,
-                It.IsAny<string>(),
-                It.Is<IReadOnlyCollection<UserType>>(roles =>
-                    roles != null && roles.Intersect(types).Any()),
-                CancellationToken.None))
-            .ReturnsAsync(Result<User>.Success(
-                new User("example", companyId)));
-    }
-
-    private void SetValidatorMockFailure(
-        IReadOnlyCollection<UserType> types,
-        Ulid companyId,
-        ErrorType errorType,
-        string errorMessage)
-    {
-        _validatorMock
-            .Setup(x => x.EnsureUserHasAnyRoleAsync(
-                _wmsDbContext,
-                _userId,
-                It.IsAny<string>(),
-                It.Is<IReadOnlyCollection<UserType>>(roles =>
-                    roles != null && roles.Intersect(types).Any()),
-                CancellationToken.None))
-            .ReturnsAsync(Result<User>.Fail(errorType, errorMessage));
-    }
-
+  
     [Fact]
     public async Task CreateWarehouseOperation_ReturnSuccessDTO()
     {
@@ -204,18 +74,12 @@ public class WarehouseOperationsUnitTests : MyIAsyncLifetime
         var assignedUser = await AddUser(Ulid.NewUlid(), company.Id, "AssignedUser", UserType.Worker);
         var currentUser = await AddUser(_userId, company.Id, "CurrentUser", UserType.Admin);
         var warehouse = await AddWarehouse(company.Id);
-  
-        _factoryMock
-            .Setup(x => x.GetContextAsync(company.Id, CancellationToken.None))
-            .ReturnsAsync(_wmsDbContext);
 
-        _companyContextMock
-            .SetupGet(x => x.CompanyId)
-            .Returns(company.Id);
+        SetNewCompanySettings(company.Id);
+        SetValidatorMockEnsureUserHasAnyRoleSuccess([UserType.Admin, UserType.Worker], company.Id);
+        SetValidatorMocknEsureUserExistsTrue(assignedUser.Id);
 
-        SetValidatorMockSuccess([UserType.Admin, UserType.Worker], company.Id);
-
-        var result = await _warehouseOperationService.CreateWarehouseOperationAsync(_userId, assignedUser.Id,
+       var result = await _warehouseOperationService.CreateWarehouseOperationAsync(_userId, assignedUser.Id,
             new CreateWarehouseOperationRequest(WarehouseOperationType.Picking), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
@@ -241,15 +105,8 @@ public class WarehouseOperationsUnitTests : MyIAsyncLifetime
         var assignedUser = await AddUser(Ulid.NewUlid(), company.Id, "AssignedUser", UserType.Worker);
         var currentUser = await AddUser(_userId, company.Id, "CurrentUser", UserType.Admin);
 
-        _factoryMock
-            .Setup(x => x.GetContextAsync(company.Id, CancellationToken.None))
-            .ReturnsAsync(_wmsDbContext);
-
-        _companyContextMock
-            .SetupGet(x => x.CompanyId)
-            .Returns(company.Id);
-
-        SetValidatorMockSuccess([UserType.Admin, UserType.Worker], company.Id);
+        SetNewCompanySettings(company.Id);
+        SetValidatorMockEnsureUserHasAnyRoleFailure([UserType.Admin, UserType.Worker], company.Id, ErrorType.NotFound, "User not found");
 
         var result = await _warehouseOperationService.CreateWarehouseOperationAsync(_userId, assignedUser.Id,
             new CreateWarehouseOperationRequest(WarehouseOperationType.Picking), CancellationToken.None);
@@ -268,22 +125,9 @@ public class WarehouseOperationsUnitTests : MyIAsyncLifetime
         var assignedUser = await AddUser(Ulid.NewUlid(), company.Id, "AssignedUser", UserType.Worker);
         var currentUser = await AddUser(_userId, company.Id, "CurrentUser", UserType.Admin);
 
-        _factoryMock
-            .Setup(x => x.GetContextAsync(company.Id, CancellationToken.None))
-            .ReturnsAsync(_wmsDbContext);
-
-        _companyContextMock
-            .SetupGet(x => x.CompanyId)
-            .Returns(company.Id);
-
-        _validatorMock
-            .Setup(x => x.EnsureUserHasAnyRoleAsync(_wmsDbContext, _userId, "Only admins and managers can create warehouse operation",
-                new List<UserType> { UserType.Admin, UserType.Manager }, CancellationToken.None))
-            .ReturnsAsync(Result<User>.Success(new User("example", company.Id)));
-
-        _validatorMock
-            .Setup(x => x.EnsureUserExistsAsync(_wmsDbContext, assignedUser.Id, CancellationToken.None))
-            .ReturnsAsync(false);
+        SetNewCompanySettings(company.Id);
+        SetValidatorMockEnsureUserHasAnyRoleSuccess([UserType.Admin, UserType.Worker], company.Id);
+        SetValidatorMocknEsureUserExistsFalse(assignedUser.Id);
 
         var result = await _warehouseOperationService.CreateWarehouseOperationAsync(_userId, assignedUser.Id,
             new CreateWarehouseOperationRequest(WarehouseOperationType.Picking), CancellationToken.None);
@@ -293,5 +137,609 @@ public class WarehouseOperationsUnitTests : MyIAsyncLifetime
         Assert.NotNull(result.ErrorMessage);
         Assert.NotNull(result.ErrorType);
         Assert.Equal(ErrorType.Conflict, result.ErrorType);
+    }
+}*/
+
+
+using Application.Stocks;
+using Application.WarehouseOperations;
+using Application.WarehouseOperations.Requests;
+using Domain.Models;
+using Infrastructure;
+using Infrastructure.ResponsePatterns;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Xunit;
+
+namespace WarehouseCore.Tests.WarehouseOperations;
+
+public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
+{
+    private WarehouseOperationService _service = null!;
+
+    private Ulid _adminId;
+    private Ulid _workerId;
+    private Ulid _companyId;
+
+    public override async ValueTask InitializeAsync()
+    {
+        _registryConnection = new SqliteConnection("Data Source=:memory:");
+        await _registryConnection.OpenAsync();
+
+        var registryOptions = new DbContextOptionsBuilder<RegistryDbContext>()
+            .UseSqlite(_registryConnection)
+            .Options;
+
+        _registryDbContext = new RegistryDbContext(registryOptions);
+        await _registryDbContext.Database.EnsureCreatedAsync();
+
+        _wmsConnection = new SqliteConnection("Data Source=:memory:");
+        await _wmsConnection.OpenAsync();
+
+        var wmsOptions = new DbContextOptionsBuilder<WmsDbContext>()
+            .UseSqlite(_wmsConnection)
+            .Options;
+
+        _wmsDbContext = new WmsDbContext(wmsOptions);
+        await _wmsDbContext.Database.EnsureCreatedAsync();
+
+        _companyContextMock = new();
+        _factoryMock = new();
+        _validatorMock = new();
+
+        _adminId = Ulid.NewUlid();
+        _workerId = Ulid.NewUlid();
+
+        _userId = _adminId;
+
+        _service = new WarehouseOperationService(
+            _factoryMock.Object,
+            _companyContextMock.Object,
+            _validatorMock.Object,
+            new StockService());
+    }
+
+    public override async ValueTask DisposeAsync()
+    {
+        await _registryDbContext.DisposeAsync();
+        await _registryConnection.DisposeAsync();
+
+        await _wmsDbContext.DisposeAsync();
+        await _wmsConnection.DisposeAsync();
+    }
+
+    // Test setup
+
+    private async Task SetupCompanyAndUsers()
+    {
+        var company = await AddCompany();
+
+        _companyId = company.Id;
+
+        SetNewCompanySettings(_companyId);
+
+        await AddUser(_adminId, _companyId, "Admin", UserType.Admin);
+        await AddUser(_workerId, _companyId, "Worker", UserType.Worker);
+
+        SetValidatorMockEnsureUserHasAnyRoleSuccess(
+            new[] { UserType.Admin, UserType.Manager },
+            _companyId);
+
+        SetValidatorMocknEsureUserExistsTrue(_workerId);
+    }
+
+    private void SetupUserExists(Ulid userId)
+    {
+        SetValidatorMocknEsureUserExistsTrue(userId);
+    }
+
+    private void SetupRoleFailure(ErrorType errorType, string message)
+    {
+        SetValidatorMockEnsureUserHasAnyRoleFailure(
+            new[] { UserType.Admin, UserType.Manager },
+            _companyId,
+            errorType,
+            message);
+    }
+
+    private async Task<WarehouseOperation> CreateOperation(
+        WarehouseOperationType type = WarehouseOperationType.Picking)
+    {
+        return await AddWarehouseOperation(type, _adminId, _workerId);
+    }
+
+    // CreateWarehouseOperationAsync
+
+    [Fact]
+    public async Task CreateWarehouseOperationAsync_ReturnSuccess()
+    {
+        await SetupCompanyAndUsers();
+
+        var result = await _service.CreateWarehouseOperationAsync(
+            _adminId,
+            _workerId,
+            new CreateWarehouseOperationRequest(WarehouseOperationType.Picking),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
+        Assert.Equal(
+            WarehouseOperationType.Picking.ToString(),
+            result.Data.Type);
+    }
+
+    [Fact]
+    public async Task CreateWarehouseOperationAsync_UserHasNoPermission_ReturnFailure()
+    {
+        await SetupCompanyAndUsers();
+
+        SetupRoleFailure(ErrorType.Forbidden, "Access denied");
+
+        var result = await _service.CreateWarehouseOperationAsync(
+            _adminId,
+            _workerId,
+            new CreateWarehouseOperationRequest(WarehouseOperationType.Picking),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Forbidden, result.ErrorType);
+        Assert.Equal("Access denied", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task CreateWarehouseOperationAsync_AssignedUserNotFound_ReturnConflict()
+    {
+        await SetupCompanyAndUsers();
+
+        SetValidatorMocknEsureUserExistsFalse(_workerId);
+
+        var result = await _service.CreateWarehouseOperationAsync(
+            _adminId,
+            _workerId,
+            new CreateWarehouseOperationRequest(WarehouseOperationType.Picking),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Conflict, result.ErrorType);
+        Assert.Equal(
+            "Assigned user doesn't belong to company",
+            result.ErrorMessage);
+    }
+
+    // GetWarehouseOperationByIdAsync
+
+    [Fact]
+    public async Task GetWarehouseOperationByIdAsync_ReturnSuccess()
+    {
+        await SetupCompanyAndUsers();
+
+        var operation = await CreateOperation();
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.GetWarehouseOperationByIdAsync(
+            _adminId,
+            operation.Id,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
+        Assert.Equal(operation.Id, result.Data.Id);
+        Assert.Equal(_adminId, result.Data.CreatedById);
+    }
+
+    [Fact]
+    public async Task GetWarehouseOperationByIdAsync_UserNotFound_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        var result = await _service.GetWarehouseOperationByIdAsync(
+            Ulid.NewUlid(),
+            Ulid.NewUlid(),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+        Assert.Equal("User doesn't belong to company", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task GetWarehouseOperationByIdAsync_OperationNotFound_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.GetWarehouseOperationByIdAsync(
+            _adminId,
+            Ulid.NewUlid(),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+        Assert.Equal("Warehouse operation not found", result.ErrorMessage);
+    }
+
+    // GetWarehouseOperationsAsync
+
+    [Fact]
+    public async Task GetWarehouseOperationsAsync_ReturnSuccess()
+    {
+        await SetupCompanyAndUsers();
+
+        await CreateOperation();
+        await CreateOperation(WarehouseOperationType.Transfer);
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.GetWarehouseOperationsAsync(
+            _adminId,
+            new GetWarehouseOperationsRequest(
+                null, null, null, null, null,
+                null, null, null, null,
+                1, 10),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
+        Assert.Equal(2, result.Data.TotalCount);
+        Assert.Equal(2, result.Data.Items.Count());
+    }
+
+    [Fact]
+    public async Task GetWarehouseOperationsAsync_EmptyList_ReturnSuccess()
+    {
+        await SetupCompanyAndUsers();
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.GetWarehouseOperationsAsync(
+            _adminId,
+            new GetWarehouseOperationsRequest(
+                null, null, null, null, null,
+                null, null, null, null,
+                1, 10),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
+        Assert.Empty(result.Data.Items);
+        Assert.Equal(0, result.Data.TotalCount);
+    }
+
+    [Theory]
+    [InlineData(0, 10)]
+    [InlineData(-1, 10)]
+    [InlineData(1, 0)]
+    [InlineData(1, -1)]
+    public async Task GetWarehouseOperationsAsync_IncorrectPagination_ReturnValidation(
+        int page,
+        int pageSize)
+    {
+        var result = await _service.GetWarehouseOperationsAsync(
+            _adminId,
+            new GetWarehouseOperationsRequest(
+                null, null, null, null, null,
+                null, null, null, null,
+                page, pageSize),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Validation, result.ErrorType);
+        Assert.Equal("Validation error", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task GetWarehouseOperationsAsync_UserNotFound_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        SetValidatorMocknEsureUserExistsFalse(_adminId);
+
+        var result = await _service.GetWarehouseOperationsAsync(
+            _adminId,
+            new GetWarehouseOperationsRequest(
+                null, null, null, null, null,
+                null, null, null, null,
+                1, 10),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+    }
+
+    [Fact]
+    public async Task GetWarehouseOperationsAsync_FilterByType_ReturnFilteredList()
+    {
+        await SetupCompanyAndUsers();
+
+        await CreateOperation(WarehouseOperationType.Picking);
+        await CreateOperation(WarehouseOperationType.Transfer);
+        await CreateOperation(WarehouseOperationType.Receiving);
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.GetWarehouseOperationsAsync(
+            _adminId,
+            new GetWarehouseOperationsRequest(
+                null,
+                new List<WarehouseOperationType>
+                {
+                    WarehouseOperationType.Transfer
+                },
+                null, null, null,
+                null, null, null, null,
+                1, 10),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
+        Assert.Single(result.Data.Items);
+        Assert.Equal(WarehouseOperationType.Transfer.ToString(), result.Data.Items.FirstOrDefault()?.Type);
+    }
+
+    [Fact]
+    public async Task GetWarehouseOperationsAsync_FilterByStatus_ReturnFilteredList()
+    {
+        await SetupCompanyAndUsers();
+
+        var operation1 = await CreateOperation();
+        var operation2 = await CreateOperation();
+
+        operation2.Status = WarehouseOperationStatus.Completed;
+
+        await _wmsDbContext.SaveChangesAsync();
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.GetWarehouseOperationsAsync(
+            _adminId,
+            new GetWarehouseOperationsRequest(
+                null, null,
+                new List<WarehouseOperationStatus>
+                {
+                    WarehouseOperationStatus.Completed
+                },
+                null, null,
+                null, null, null, null,
+                1, 10),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Single(result.Data!.Items);
+        Assert.Equal(operation2.Id, result.Data.Items.FirstOrDefault()?.Id);
+    }
+
+    [Fact]
+    public async Task GetWarehouseOperationsAsync_Pagination_ReturnCorrectPage()
+    {
+        await SetupCompanyAndUsers();
+
+        await CreateOperation();
+        await CreateOperation(WarehouseOperationType.Transfer);
+        await CreateOperation(WarehouseOperationType.Receiving);
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.GetWarehouseOperationsAsync(
+            _adminId,
+            new GetWarehouseOperationsRequest(
+                null, null, null, null, null,
+                null, null, null, null,
+                2, 2),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
+        Assert.Equal(3, result.Data.TotalCount);
+        Assert.Single(result.Data.Items);
+        Assert.Equal(2, result.Data.Page);
+    }
+
+    // CompleteWarehouseOperationAsync
+
+    [Fact]
+    public async Task CompleteWarehouseOperationAsync_ReturnSuccess()
+    {
+        await SetupCompanyAndUsers();
+
+        var operation = await CreateOperation();
+
+        SetupUserExists(_workerId);
+
+        var result = await _service.CompleteWarehouseOperationAsync(
+            _workerId,
+            operation.Id,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
+        Assert.Equal(
+            WarehouseOperationStatus.Completed.ToString(),
+            result.Data.Status);
+    }
+
+    [Fact]
+    public async Task CompleteWarehouseOperationAsync_UserNotFound_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        SetValidatorMocknEsureUserExistsFalse(_workerId);
+
+        var result = await _service.CompleteWarehouseOperationAsync(
+            _workerId,
+            Ulid.NewUlid(),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+        Assert.Equal("User doesn't belong to company", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task CompleteWarehouseOperationAsync_OperationNotFound_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        SetupUserExists(_workerId);
+
+        var result = await _service.CompleteWarehouseOperationAsync(
+            _workerId,
+            Ulid.NewUlid(),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+        Assert.Equal("Warehouse operation not found", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task CompleteWarehouseOperationAsync_WrongAssignedUser_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        var operation = await CreateOperation();
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.CompleteWarehouseOperationAsync(
+            _adminId,
+            operation.Id,
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+    }
+
+    [Theory]
+    [InlineData(WarehouseOperationStatus.Completed, "already completed")]
+    [InlineData(WarehouseOperationStatus.Cancelled, "already cancelled")]
+    public async Task CompleteWarehouseOperationAsync_OperationNotInProgress_ReturnConflict(
+        WarehouseOperationStatus status,
+        string expectedMessage)
+    {
+        await SetupCompanyAndUsers();
+
+        var operation = await CreateOperation();
+
+        operation.Status = status;
+
+        await _wmsDbContext.SaveChangesAsync();
+
+        SetupUserExists(_workerId);
+
+        var result = await _service.CompleteWarehouseOperationAsync(
+            _workerId,
+            operation.Id,
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Conflict, result.ErrorType);
+        Assert.Equal(
+            $"Warehouse operation {expectedMessage}",
+            result.ErrorMessage);
+    }
+
+    // CancelWarehouseOperationAsync
+
+    [Fact]
+    public async Task CancelWarehouseOperationAsync_ReturnSuccess()
+    {
+        await SetupCompanyAndUsers();
+
+        var operation = await CreateOperation();
+
+        SetupUserExists(_workerId);
+
+        var result = await _service.CancelWarehouseOperationAsync(
+            _workerId,
+            operation.Id,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Data);
+        Assert.Equal(
+            WarehouseOperationStatus.Cancelled.ToString(),
+            result.Data.Status);
+    }
+
+    [Fact]
+    public async Task CancelWarehouseOperationAsync_UserNotFound_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        SetValidatorMocknEsureUserExistsFalse(_workerId);
+
+        var result = await _service.CancelWarehouseOperationAsync(
+            _workerId,
+            Ulid.NewUlid(),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+        Assert.Equal("User doesn't belong to company", result.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task CancelWarehouseOperationAsync_OperationNotFound_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        SetupUserExists(_workerId);
+
+        var result = await _service.CancelWarehouseOperationAsync(
+            _workerId,
+            Ulid.NewUlid(),
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+    }
+
+    [Fact]
+    public async Task CancelWarehouseOperationAsync_WrongAssignedUser_ReturnNotFound()
+    {
+        await SetupCompanyAndUsers();
+
+        var operation = await CreateOperation();
+
+        SetupUserExists(_adminId);
+
+        var result = await _service.CancelWarehouseOperationAsync(
+            _adminId,
+            operation.Id,
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.NotFound, result.ErrorType);
+    }
+
+    [Theory]
+    [InlineData(WarehouseOperationStatus.Completed, "already completed")]
+    [InlineData(WarehouseOperationStatus.Cancelled, "already cancelled")]
+    public async Task CancelWarehouseOperationAsync_OperationNotInProgress_ReturnConflict(
+        WarehouseOperationStatus status,
+        string expectedMessage)
+    {
+        await SetupCompanyAndUsers();
+
+        var operation = await CreateOperation();
+
+        operation.Status = status;
+
+        await _wmsDbContext.SaveChangesAsync();
+
+        SetupUserExists(_workerId);
+
+        var result = await _service.CancelWarehouseOperationAsync(
+            _workerId,
+            operation.Id,
+            CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorType.Conflict, result.ErrorType);
+        Assert.Equal(
+            $"Warehouse operation {expectedMessage}",
+            result.ErrorMessage);
     }
 }

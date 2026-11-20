@@ -47,6 +47,8 @@ public class WarehouseOperationService : IWarehouseOperationService
 
         await context.SaveChangesAsync(token);
 
+        await context.Entry(warehouseOperation).Reference(x => x.CreatedBy).LoadAsync(token);
+
         return Result<WarehouseOperationDetailsResponse>.Success(new WarehouseOperationDetailsResponse(warehouseOperation));
     }
 
@@ -259,6 +261,7 @@ public class WarehouseOperationService : IWarehouseOperationService
 
         await context.SaveChangesAsync(token);
         await context.Database.CommitTransactionAsync(token);
+        await context.Entry(warehouseOperation).Reference(x => x.CreatedBy).LoadAsync(token);
 
         return Result<WarehouseOperationDetailsResponse>.Success(new WarehouseOperationDetailsResponse(warehouseOperation));
     }
@@ -293,6 +296,7 @@ public class WarehouseOperationService : IWarehouseOperationService
         warehouseOperation.Status = WarehouseOperationStatus.Cancelled;
 
         await context.SaveChangesAsync(token);
+              await context.Entry(warehouseOperation).Reference(x => x.CreatedBy).LoadAsync(token);
 
         return Result<WarehouseOperationDetailsResponse>.Success(new WarehouseOperationDetailsResponse(warehouseOperation));
     }

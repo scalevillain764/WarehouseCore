@@ -71,86 +71,16 @@ public class ProductUnitTests : MyIAsyncLifetime
         await Task.CompletedTask;
     }
 
-    private async Task<Company> AddCompany()
-    {
-        var company = new Company("company1", "CM1");
-
-        _registryDbContext.Companies.Add(company);
-        await _registryDbContext.SaveChangesAsync(CancellationToken.None);
-
-        return company;
-    }
-
-    private async Task SetCompaniesSettings(Ulid companyId)
-    {
-        _factoryMock
-            .Setup(x => x.GetContextAsync(companyId, CancellationToken.None))
-            .ReturnsAsync(_wmsDbContext);
-
-        _companyContextMock
-            .SetupGet(x => x.CompanyId)
-            .Returns(companyId);
-    }
-
-    private void SetValidatorMockSuccess(
-        IReadOnlyCollection<UserType> types,
-        Ulid companyId)
-    {
-        _validatorMock
-            .Setup(x => x.EnsureUserHasAnyRoleAsync(
-                _wmsDbContext,
-                _userId,
-                It.IsAny<string>(),
-                It.Is<IReadOnlyCollection<UserType>>(roles =>
-                    roles != null && roles.Intersect(types).Any()),
-                CancellationToken.None))
-            .ReturnsAsync(Result<User>.Success(
-                new User("example", companyId)));
-    }
-
-    private void SetValidatorMockFailure(
-        IReadOnlyCollection<UserType> types,
-        Ulid companyId,
-        ErrorType errorType,
-        string errorMessage)
-    {
-        _validatorMock
-            .Setup(x => x.EnsureUserHasAnyRoleAsync(
-                _wmsDbContext,
-                _userId,
-                It.IsAny<string>(),
-                It.Is<IReadOnlyCollection<UserType>>(roles =>
-                    roles != null && roles.Intersect(types).Any()),
-                CancellationToken.None))
-            .ReturnsAsync(Result<User>.Fail(errorType, errorMessage));
-    }
-
-    private async Task<Product> AddProductAsync()
-    {
-        var product = new Product(
-            "Example_product",
-            "Example_description",
-            ProductCategory.AudioDevices,
-            "HyperX",
-            UnitOfMeasure.Set,
-            120,
-            "Black");
-
-        _wmsDbContext.Products.Add(product);
-        await _wmsDbContext.SaveChangesAsync(CancellationToken.None);
-
-        return product;
-    }
-
+  
     // Add product
 
     [Fact]
-    public async Task AddProductAsync_ReturnSuccessDTO()
+    public async Task AddProduct_ReturnSuccessDTO()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        SetValidatorMockSuccess(
+        SetValidatorMockEnsureUserHasAnyRoleSuccess(
             [UserType.Admin, UserType.Manager],
             company.Id);
 
@@ -181,12 +111,12 @@ public class ProductUnitTests : MyIAsyncLifetime
     }
 
     [Fact]
-    public async Task AddProductAsync_UserRoleFail_ReturnFailure()
+    public async Task AddProduct_UserRoleFail_ReturnFailure()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
 
-        SetValidatorMockFailure(
+        SetNewCompanySettings(company.Id);
+        SetValidatorMockEnsureUserHasAnyRoleFailure(
             [UserType.Admin, UserType.Manager],
             company.Id,
             ErrorType.NotFound,
@@ -225,11 +155,11 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task RemoveProductAsync_ReturnSuccessDTO()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        var product = await AddProductAsync();
+        var product = await AddProduct();
 
-        SetValidatorMockSuccess(
+         SetValidatorMockEnsureUserHasAnyRoleSuccess(
             [UserType.Manager, UserType.Admin],
             company.Id);
 
@@ -258,9 +188,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task RemoveProductAsync_ProductDoesntExist_ReturnFailure()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        SetValidatorMockSuccess(
+         SetValidatorMockEnsureUserHasAnyRoleSuccess(
             [UserType.Manager, UserType.Admin],
             company.Id);
 
@@ -287,11 +217,11 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task RemoveProductAsync_UserRoleFail_ReturnFailure()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        var product = await AddProductAsync();
+        var product = await AddProduct();
 
-        SetValidatorMockFailure(
+        SetValidatorMockEnsureUserHasAnyRoleFailure(
             [UserType.Manager, UserType.Admin],
             company.Id,
             ErrorType.Forbidden,
@@ -314,9 +244,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductByIdAsync_ProductExists_ReturnSuccessDTO()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        var product = await AddProductAsync();
+        var product = await AddProduct();
 
         var result = await _productService.GetProductByIdAsync(
             _userId,
@@ -333,7 +263,7 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductByIdAsync_ProductDoesntExist_ReturnFailure()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
         var result = await _productService.GetProductByIdAsync(
             _userId,
@@ -351,9 +281,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_ReturnSuccessWithPagedResponse()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        await AddProductAsync();
+        await AddProduct();
 
         var product = new Product(
             "Another_product",
@@ -391,7 +321,7 @@ public class ProductUnitTests : MyIAsyncLifetime
         int pageSize)
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
         var request = new GetProductsQueryRequest(
             null, null, null, null, null, null,
@@ -411,7 +341,7 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_NoProducts_ReturnEmptyPagedResponse()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
         var request = new GetProductsQueryRequest(
             null, null, null, null, null, null,
@@ -431,9 +361,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_NameFilter_ReturnMatchingProducts()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        await AddProductAsync();
+        await AddProduct();
 
         var request = new GetProductsQueryRequest(
             "Example", null, null, null, null, null,
@@ -452,9 +382,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_DescriptionFilter_ReturnMatchingProducts()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        await AddProductAsync();
+        await AddProduct();
 
         var request = new GetProductsQueryRequest(
             null, "Example", null, null, null, null,
@@ -473,9 +403,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_CategoryFilter_ReturnMatchingProducts()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        await AddProductAsync();
+        await AddProduct();
 
         var request = new GetProductsQueryRequest(
             null, null, [ProductCategory.AudioDevices], null, null, null,
@@ -494,9 +424,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_BrandFilter_ReturnMatchingProducts()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        await AddProductAsync();
+        await AddProduct();
 
         var request = new GetProductsQueryRequest(
             null, null, null, "HyperX", null, null,
@@ -515,9 +445,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_UnitOfMeasureFilter_ReturnMatchingProducts()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        await AddProductAsync();
+        await AddProduct();
 
         var request = new GetProductsQueryRequest(
             null, null, null, null, [UnitOfMeasure.Set], null,
@@ -536,9 +466,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_WeightFilter_ReturnMatchingProducts()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        await AddProductAsync();
+        await AddProduct();
 
         var request = new GetProductsQueryRequest(
             null, null, null, null, null, 120,
@@ -557,9 +487,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_SKUFilter_ReturnMatchingProducts()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        var product = await AddProductAsync();
+        var product = await AddProduct();
 
         var request = new GetProductsQueryRequest(
             null, null, null, null, null, null,
@@ -578,9 +508,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_ColorFilter_ReturnMatchingProducts()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        await AddProductAsync();
+        await AddProduct();
 
         var request = new GetProductsQueryRequest(
             null, null, null, null, null, null,
@@ -601,14 +531,14 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_InactiveProducts_AdminOrManager_ReturnSuccess()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        var product = await AddProductAsync();
+        var product = await AddProduct();
 
         product.IsActive = false;
         await _wmsDbContext.SaveChangesAsync(CancellationToken.None);
 
-        SetValidatorMockSuccess(
+         SetValidatorMockEnsureUserHasAnyRoleSuccess(
             [UserType.Manager, UserType.Admin],
             company.Id);
 
@@ -638,9 +568,9 @@ public class ProductUnitTests : MyIAsyncLifetime
     public async Task GetProductsByQuery_InactiveProducts_UserRoleFail_ReturnFailure()
     {
         var company = await AddCompany();
-        await SetCompaniesSettings(company.Id);
+        SetNewCompanySettings(company.Id);
 
-        SetValidatorMockFailure(
+        SetValidatorMockEnsureUserHasAnyRoleFailure(
             [UserType.Manager, UserType.Admin],
             company.Id,
             ErrorType.Forbidden,

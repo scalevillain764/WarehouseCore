@@ -37,93 +37,12 @@ public class StockUnitTests : MyIAsyncLifetime
         await Task.CompletedTask;
     }
 
-    private async Task<Product> AddProduct(int weightPerUnit = 10)
-    {
-        var product = new Product(
-            "Example_product",
-            "Example_description",
-            ProductCategory.AudioDevices,
-            "HyperX",
-            UnitOfMeasure.Set,
-            weightPerUnit,
-            "Black");
-
-        _wmsDbContext.Products.Add(product);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return product;
-    }
-
-    private async Task<Warehouse> AddWarehouse()
-    {
-        var warehouse = new Warehouse(
-            $"warehouse_{Ulid.NewUlid()}",
-            new Address("Belarus", "Minsk", "Nesterova", "92"),
-            Ulid.NewUlid());
-
-        _wmsDbContext.Warehouses.Add(warehouse);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return warehouse;
-    }
-
-    private async Task<WarehouseZone> AddWarehouseZone(Ulid warehouseId)
-    {
-        var zone = new WarehouseZone(
-            "Picking",
-            "Example",
-            warehouseId,
-            WarehouseZoneType.Picking);
-
-        _wmsDbContext.WarehouseZones.Add(zone);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return zone;
-    }
-
-    private async Task<Bin> AddBin(
-        Ulid companyId,
-        Ulid warehouseZoneId,
-        int binNumber = 1,
-        BinTypeByCapacity capacity = BinTypeByCapacity.Heavy)
-    {
-        var bin = new Bin(
-            $"PCK-01-01-{binNumber:D2}",
-            1,
-            1,
-            binNumber,
-            companyId,
-            warehouseZoneId,
-            capacity);
-
-        _wmsDbContext.Bins.Add(bin);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return bin;
-    }
-
-    private async Task<Stock> AddStock(
-        Bin bin,
-        Product product,
-        int quantity)
-    {
-        var stock = new Stock(bin.Id, product.Id, quantity);
-
-        bin.CurrentWeight += quantity * product.WeightPerUnit;
-
-        _wmsDbContext.Stocks.Add(stock);
-        await _wmsDbContext.SaveChangesAsync();
-
-        return stock;
-    }
-
     // Add stock
 
     [Fact]
     public async Task AddStockAsync_ReturnSuccessDTO()
     {
         var product = await AddProduct();
-
         var warehouse = await AddWarehouse();
         var zone = await AddWarehouseZone(warehouse.Id);
         var bin = await AddBin(warehouse.CompanyId, zone.Id);

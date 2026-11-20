@@ -65,18 +65,6 @@ public class CompaniesUnitTests : MyIAsyncLifetime
         await Task.CompletedTask;
     }
 
-    // Helpers
-    private void SetNewCompanySettings(Ulid newCompanyId)
-    {
-        _companyContextMock
-          .SetupGet(x => x.CompanyId)
-              .Returns(newCompanyId);
-
-        _factoryMock
-            .Setup(x => x.GetContextAsync(newCompanyId, CancellationToken.None))
-                .ReturnsAsync(_wmsDbContext);
-    }    
-
     // Get current company
 
     [Fact]
