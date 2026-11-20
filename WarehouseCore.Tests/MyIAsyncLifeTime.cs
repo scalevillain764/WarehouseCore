@@ -192,7 +192,7 @@ public abstract class MyIAsyncLifetime : IAsyncLifetime
         WarehouseOperationType type, Ulid createdById, Ulid assignedToId
         )
     {
-        var warehouseOperation = new WarehouseOperation(WarehouseOperationType.Picking, createdById, assignedToId);
+        var warehouseOperation = new WarehouseOperation(type, createdById, assignedToId);
         _wmsDbContext.WarehouseOperations.Add(warehouseOperation);
         await _wmsDbContext.SaveChangesAsync(CancellationToken.None);
         return warehouseOperation;

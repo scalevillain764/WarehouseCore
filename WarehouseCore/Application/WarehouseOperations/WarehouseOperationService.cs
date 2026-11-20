@@ -62,6 +62,7 @@ public class WarehouseOperationService : IWarehouseOperationService
             return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.NotFound, "User doesn't belong to company");
 
         var warehouseOperation = await context.WarehouseOperations
+            .Where(x => x.Id == warehouseOperationId)
             .Select(x => new WarehouseOperationDetailsResponse(
                 x.Id,
                 x.OperationNumber,
@@ -74,7 +75,7 @@ public class WarehouseOperationService : IWarehouseOperationService
                 x.CreatedBy.SecondName,
                 x.CreatedBy.Type.ToString()
             ))
-           .FirstOrDefaultAsync(x => x.Id == warehouseOperationId, token);
+           .FirstOrDefaultAsync(token);
 
         return warehouseOperation is not null ? Result<WarehouseOperationDetailsResponse>.Success(warehouseOperation) :
             Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.NotFound, "Warehouse operation not found");
@@ -179,7 +180,7 @@ public class WarehouseOperationService : IWarehouseOperationService
                 WarehouseOperationStatus.Cancelled => "already cancelled",
                 _ => "not in progress"
             };
-            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.Conflict, $"Warehouse operation already {postfix}");
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.Conflict, $"Warehouse operation {postfix}");
         }
 
         var type = warehouseOperation.Type;
@@ -290,7 +291,7 @@ public class WarehouseOperationService : IWarehouseOperationService
                 WarehouseOperationStatus.Cancelled => "already cancelled",
                 _ => "not in progress"
             };
-            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.Conflict, $"Warehouse operation already {postfix}");
+            return Result<WarehouseOperationDetailsResponse>.Fail(ErrorType.Conflict, $"Warehouse operation {postfix}");
         }
 
         warehouseOperation.Status = WarehouseOperationStatus.Cancelled;

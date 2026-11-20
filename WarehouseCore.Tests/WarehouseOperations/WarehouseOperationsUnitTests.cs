@@ -1,154 +1,13 @@
-﻿/*using Application.CompanyContext;
-using Application.Features;
+﻿
 using Application.Stocks;
 using Application.WarehouseOperations;
 using Application.WarehouseOperations.Requests;
-using Application.WarehouseOperations.Responses;
 using Domain.Models;
-using User = Domain.Models.User;
 using Infrastructure;
+using Infrastructure.ResponsePatterns;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using Newtonsoft.Json.Linq;
-using Infrastructure.ResponsePatterns;
-using static Microsoft.ApplicationInsights.MetricDimensionNames.TelemetryContext;
-namespace WarehouseCore.Tests.WarehouseOperations;
-
-public class WarehouseOperationsUnitTests : MyIAsyncLifetime
-{
-    private Mock<IStockService> _stockServiceMock = null;
-    private WarehouseOperationService _warehouseOperationService = null;
-    public override async ValueTask InitializeAsync()
-    {
-        _registryConnection = new SqliteConnection("Data Source=:memory:");
-        await _registryConnection.OpenAsync();
-
-        var registryOptions = new DbContextOptionsBuilder<RegistryDbContext>()
-            .UseSqlite(_registryConnection)
-            .Options;
-
-        _registryDbContext = new RegistryDbContext(registryOptions);
-        await _registryDbContext.Database.EnsureCreatedAsync();
-
-        _wmsConnection = new SqliteConnection("Data Source=:memory:");
-        await _wmsConnection.OpenAsync();
-
-        var wmsOptions = new DbContextOptionsBuilder<WmsDbContext>()
-            .UseSqlite(_wmsConnection)
-            .Options;
-
-        _wmsDbContext = new WmsDbContext(wmsOptions);
-        await _wmsDbContext.Database.EnsureCreatedAsync();
-
-        _userId = Ulid.NewUlid();
-        _companyContextMock = new Mock<ICurrentCompanyContext>();
-        _factoryMock = new Mock<IWmsDbContextFactory>();
-        _validatorMock = new Mock<ICompanyAcessValidator>();
-        _stockServiceMock = new Mock<IStockService>();
-
-        _warehouseOperationService = new WarehouseOperationService(
-            _factoryMock.Object,
-            _companyContextMock.Object,
-            _validatorMock.Object,
-            _stockServiceMock.Object
-            );
-
-        await Task.CompletedTask;
-    }
-
-    public override async ValueTask DisposeAsync()
-    {
-        await _registryDbContext.DisposeAsync();
-        await _registryConnection.DisposeAsync();
-        await _wmsDbContext.DisposeAsync();
-        await _wmsConnection.DisposeAsync();
-
-        await Task.CompletedTask;
-    }
-  
-    [Fact]
-    public async Task CreateWarehouseOperation_ReturnSuccessDTO()
-    {
-        var company = await AddCompany();
-        var assignedUser = await AddUser(Ulid.NewUlid(), company.Id, "AssignedUser", UserType.Worker);
-        var currentUser = await AddUser(_userId, company.Id, "CurrentUser", UserType.Admin);
-        var warehouse = await AddWarehouse(company.Id);
-
-        SetNewCompanySettings(company.Id);
-        SetValidatorMockEnsureUserHasAnyRoleSuccess([UserType.Admin, UserType.Worker], company.Id);
-        SetValidatorMocknEsureUserExistsTrue(assignedUser.Id);
-
-       var result = await _warehouseOperationService.CreateWarehouseOperationAsync(_userId, assignedUser.Id,
-            new CreateWarehouseOperationRequest(WarehouseOperationType.Picking), CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
-        Assert.NotNull(result.Data);
-        Assert.Null(result.ErrorMessage);
-        Assert.Null(result.ErrorType);
-        Assert.IsAssignableFrom<WarehouseOperationDetailsResponse>(result.Data);
-
-        _validatorMock.Verify(x =>
-           x.EnsureUserHasAnyRoleAsync(
-               _wmsDbContext,
-               _userId,
-               It.IsAny<string>(),
-               It.IsAny<IReadOnlyCollection<UserType>>(),
-               It.IsAny<CancellationToken>()),
-           Times.Once);
-    }
-
-    [Fact]
-    public async Task CreateWarehouseOperation_UserRoleCheckFailure_ReturnNotFound()
-    {
-        var company = await AddCompany();
-        var assignedUser = await AddUser(Ulid.NewUlid(), company.Id, "AssignedUser", UserType.Worker);
-        var currentUser = await AddUser(_userId, company.Id, "CurrentUser", UserType.Admin);
-
-        SetNewCompanySettings(company.Id);
-        SetValidatorMockEnsureUserHasAnyRoleFailure([UserType.Admin, UserType.Worker], company.Id, ErrorType.NotFound, "User not found");
-
-        var result = await _warehouseOperationService.CreateWarehouseOperationAsync(_userId, assignedUser.Id,
-            new CreateWarehouseOperationRequest(WarehouseOperationType.Picking), CancellationToken.None);
-
-        Assert.False(result.IsSuccess);
-        Assert.Null(result.Data);
-        Assert.NotNull(result.ErrorMessage);
-        Assert.NotNull(result.ErrorType);
-        Assert.Equal(ErrorType.NotFound, result.ErrorType);
-    }
-
-    [Fact]
-    public async Task CreateWarehouseOperation_EnsureAssignedUserExistsFailure_ReturnConflict()
-    {
-        var company = await AddCompany();
-        var assignedUser = await AddUser(Ulid.NewUlid(), company.Id, "AssignedUser", UserType.Worker);
-        var currentUser = await AddUser(_userId, company.Id, "CurrentUser", UserType.Admin);
-
-        SetNewCompanySettings(company.Id);
-        SetValidatorMockEnsureUserHasAnyRoleSuccess([UserType.Admin, UserType.Worker], company.Id);
-        SetValidatorMocknEsureUserExistsFalse(assignedUser.Id);
-
-        var result = await _warehouseOperationService.CreateWarehouseOperationAsync(_userId, assignedUser.Id,
-            new CreateWarehouseOperationRequest(WarehouseOperationType.Picking), CancellationToken.None);
-
-        Assert.False(result.IsSuccess);
-        Assert.Null(result.Data);
-        Assert.NotNull(result.ErrorMessage);
-        Assert.NotNull(result.ErrorType);
-        Assert.Equal(ErrorType.Conflict, result.ErrorType);
-    }
-}*/
-
-
-using Application.Stocks;
-using Application.WarehouseOperations;
-using Application.WarehouseOperations.Requests;
-using Domain.Models;
-using Infrastructure;
-using Infrastructure.ResponsePatterns;
-using Microsoft.Data.Sqlite;
-using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace WarehouseCore.Tests.WarehouseOperations;
@@ -156,6 +15,7 @@ namespace WarehouseCore.Tests.WarehouseOperations;
 public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
 {
     private WarehouseOperationService _service = null!;
+    private Mock<IStockService> _stockServiceMock = null!;
 
     private Ulid _adminId;
     private Ulid _workerId;
@@ -187,6 +47,8 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
         _factoryMock = new();
         _validatorMock = new();
 
+        _stockServiceMock = new();
+
         _adminId = Ulid.NewUlid();
         _workerId = Ulid.NewUlid();
 
@@ -196,7 +58,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
             _factoryMock.Object,
             _companyContextMock.Object,
             _validatorMock.Object,
-            new StockService());
+            _stockServiceMock.Object);
     }
 
     public override async ValueTask DisposeAsync()
@@ -209,7 +71,6 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     }
 
     // Test setup
-
     private async Task SetupCompanyAndUsers()
     {
         var company = await AddCompany();
@@ -225,12 +86,18 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
             new[] { UserType.Admin, UserType.Manager },
             _companyId);
 
-        SetValidatorMocknEsureUserExistsTrue(_workerId);
+        SetupUserExists(_workerId);
     }
 
-    private void SetupUserExists(Ulid userId)
+    private void SetupUserExists(Ulid userId, bool exists = true)
     {
-        SetValidatorMocknEsureUserExistsTrue(userId);
+        if (exists)
+        {
+            SetValidatorMocknEsureUserExistsTrue(userId);
+            return;
+        }
+
+        SetValidatorMocknEsureUserExistsFalse(userId);
     }
 
     private void SetupRoleFailure(ErrorType errorType, string message)
@@ -242,10 +109,14 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
             message);
     }
 
-    private async Task<WarehouseOperation> CreateOperation(
-        WarehouseOperationType type = WarehouseOperationType.Picking)
+    private async Task<WarehouseOperation> CreateOperationWithStatus(
+        WarehouseOperationType type = WarehouseOperationType.Picking,
+        WarehouseOperationStatus status = WarehouseOperationStatus.InProgress)
     {
-        return await AddWarehouseOperation(type, _adminId, _workerId);
+        var warehouseOperation = new WarehouseOperation(type, status, _adminId, _workerId);
+        _wmsDbContext.WarehouseOperations.Add(warehouseOperation);
+        await _wmsDbContext.SaveChangesAsync(CancellationToken.None);
+        return warehouseOperation;
     }
 
     // CreateWarehouseOperationAsync
@@ -261,7 +132,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
             new CreateWarehouseOperationRequest(WarehouseOperationType.Picking),
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.NotNull(result.Data);
         Assert.Equal(
             WarehouseOperationType.Picking.ToString(),
@@ -291,7 +162,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        SetValidatorMocknEsureUserExistsFalse(_workerId);
+        SetupUserExists(_workerId, exists: false);
 
         var result = await _service.CreateWarehouseOperationAsync(
             _adminId,
@@ -313,7 +184,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        var operation = await CreateOperation();
+        var operation = await CreateOperationWithStatus();
 
         SetupUserExists(_adminId);
 
@@ -322,7 +193,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
             operation.Id,
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.NotNull(result.Data);
         Assert.Equal(operation.Id, result.Data.Id);
         Assert.Equal(_adminId, result.Data.CreatedById);
@@ -333,14 +204,18 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
+        SetupUserExists(_adminId, exists: false);
+
         var result = await _service.GetWarehouseOperationByIdAsync(
-            Ulid.NewUlid(),
+            _adminId,
             Ulid.NewUlid(),
             CancellationToken.None);
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
-        Assert.Equal("User doesn't belong to company", result.ErrorMessage);
+        Assert.Equal(
+            "User doesn't belong to company",
+            result.ErrorMessage);
     }
 
     [Fact]
@@ -357,7 +232,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
-        Assert.Equal("Warehouse operation not found", result.ErrorMessage);
+        Assert.Equal(
+            "Warehouse operation not found",
+            result.ErrorMessage);
     }
 
     // GetWarehouseOperationsAsync
@@ -367,8 +244,8 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        await CreateOperation();
-        await CreateOperation(WarehouseOperationType.Transfer);
+        await CreateOperationWithStatus();
+        await CreateOperationWithStatus(type: WarehouseOperationType.Transfer);
 
         SetupUserExists(_adminId);
 
@@ -380,7 +257,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
                 1, 10),
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.NotNull(result.Data);
         Assert.Equal(2, result.Data.TotalCount);
         Assert.Equal(2, result.Data.Items.Count());
@@ -401,7 +278,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
                 1, 10),
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.NotNull(result.Data);
         Assert.Empty(result.Data.Items);
         Assert.Equal(0, result.Data.TotalCount);
@@ -434,7 +311,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        SetValidatorMocknEsureUserExistsFalse(_adminId);
+        SetupUserExists(_adminId, exists: false);
 
         var result = await _service.GetWarehouseOperationsAsync(
             _adminId,
@@ -453,9 +330,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        await CreateOperation(WarehouseOperationType.Picking);
-        await CreateOperation(WarehouseOperationType.Transfer);
-        await CreateOperation(WarehouseOperationType.Receiving);
+        await CreateOperationWithStatus(type: WarehouseOperationType.Picking);
+        await CreateOperationWithStatus(type: WarehouseOperationType.Transfer);
+        await CreateOperationWithStatus(type: WarehouseOperationType.Receiving);
 
         SetupUserExists(_adminId);
 
@@ -472,10 +349,12 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
                 1, 10),
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.NotNull(result.Data);
         Assert.Single(result.Data.Items);
-        Assert.Equal(WarehouseOperationType.Transfer.ToString(), result.Data.Items.FirstOrDefault()?.Type);
+        Assert.Equal(
+            WarehouseOperationType.Transfer.ToString(),
+            result.Data.Items.First().Type);
     }
 
     [Fact]
@@ -483,12 +362,10 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        var operation1 = await CreateOperation();
-        var operation2 = await CreateOperation();
+        await CreateOperationWithStatus();
 
-        operation2.Status = WarehouseOperationStatus.Completed;
-
-        await _wmsDbContext.SaveChangesAsync();
+        var completedOperation = await CreateOperationWithStatus(
+            status: WarehouseOperationStatus.Completed);
 
         SetupUserExists(_adminId);
 
@@ -505,9 +382,12 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
                 1, 10),
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
-        Assert.Single(result.Data!.Items);
-        Assert.Equal(operation2.Id, result.Data.Items.FirstOrDefault()?.Id);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
+        Assert.NotNull(result.Data);
+        Assert.Single(result.Data.Items);
+        Assert.Equal(
+            completedOperation.Id,
+            result.Data.Items.First().Id);
     }
 
     [Fact]
@@ -515,9 +395,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        await CreateOperation();
-        await CreateOperation(WarehouseOperationType.Transfer);
-        await CreateOperation(WarehouseOperationType.Receiving);
+        await CreateOperationWithStatus();
+        await CreateOperationWithStatus(type: WarehouseOperationType.Transfer);
+        await CreateOperationWithStatus(type: WarehouseOperationType.Receiving);
 
         SetupUserExists(_adminId);
 
@@ -529,7 +409,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
                 2, 2),
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.NotNull(result.Data);
         Assert.Equal(3, result.Data.TotalCount);
         Assert.Single(result.Data.Items);
@@ -543,16 +423,14 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        var operation = await CreateOperation();
-
-        SetupUserExists(_workerId);
+        var operation = await CreateOperationWithStatus();
 
         var result = await _service.CompleteWarehouseOperationAsync(
             _workerId,
             operation.Id,
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.NotNull(result.Data);
         Assert.Equal(
             WarehouseOperationStatus.Completed.ToString(),
@@ -564,7 +442,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        SetValidatorMocknEsureUserExistsFalse(_workerId);
+        SetupUserExists(_workerId, exists: false);
 
         var result = await _service.CompleteWarehouseOperationAsync(
             _workerId,
@@ -573,7 +451,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
-        Assert.Equal("User doesn't belong to company", result.ErrorMessage);
+        Assert.Equal(
+            "User doesn't belong to company",
+            result.ErrorMessage);
     }
 
     [Fact]
@@ -581,8 +461,6 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        SetupUserExists(_workerId);
-
         var result = await _service.CompleteWarehouseOperationAsync(
             _workerId,
             Ulid.NewUlid(),
@@ -590,7 +468,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
-        Assert.Equal("Warehouse operation not found", result.ErrorMessage);
+        Assert.Equal(
+            "Warehouse operation not found",
+            result.ErrorMessage);
     }
 
     [Fact]
@@ -598,7 +478,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        var operation = await CreateOperation();
+        var operation = await CreateOperationWithStatus();
 
         SetupUserExists(_adminId);
 
@@ -609,6 +489,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
+        Assert.Equal(
+            "Warehouse operation not found",
+            result.ErrorMessage);
     }
 
     [Theory]
@@ -620,13 +503,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        var operation = await CreateOperation();
-
-        operation.Status = status;
-
-        await _wmsDbContext.SaveChangesAsync();
-
-        SetupUserExists(_workerId);
+        var operation = await CreateOperationWithStatus(status: status);
 
         var result = await _service.CompleteWarehouseOperationAsync(
             _workerId,
@@ -647,16 +524,14 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        var operation = await CreateOperation();
-
-        SetupUserExists(_workerId);
+        var operation = await CreateOperationWithStatus(status: WarehouseOperationStatus.InProgress);
 
         var result = await _service.CancelWarehouseOperationAsync(
             _workerId,
             operation.Id,
             CancellationToken.None);
 
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.ErrorMessage);
         Assert.NotNull(result.Data);
         Assert.Equal(
             WarehouseOperationStatus.Cancelled.ToString(),
@@ -668,7 +543,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        SetValidatorMocknEsureUserExistsFalse(_workerId);
+        SetupUserExists(_workerId, exists: false);
 
         var result = await _service.CancelWarehouseOperationAsync(
             _workerId,
@@ -677,7 +552,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
-        Assert.Equal("User doesn't belong to company", result.ErrorMessage);
+        Assert.Equal(
+            "User doesn't belong to company",
+            result.ErrorMessage);
     }
 
     [Fact]
@@ -685,8 +562,6 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        SetupUserExists(_workerId);
-
         var result = await _service.CancelWarehouseOperationAsync(
             _workerId,
             Ulid.NewUlid(),
@@ -694,6 +569,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
+        Assert.Equal(
+            "Warehouse operation not found",
+            result.ErrorMessage);
     }
 
     [Fact]
@@ -701,7 +579,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        var operation = await CreateOperation();
+        var operation = await CreateOperationWithStatus();
 
         SetupUserExists(_adminId);
 
@@ -712,6 +590,9 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
 
         Assert.False(result.IsSuccess);
         Assert.Equal(ErrorType.NotFound, result.ErrorType);
+        Assert.Equal(
+            "Warehouse operation not found",
+            result.ErrorMessage);
     }
 
     [Theory]
@@ -723,13 +604,7 @@ public class WarehouseOperationServiceUnitTests : MyIAsyncLifetime
     {
         await SetupCompanyAndUsers();
 
-        var operation = await CreateOperation();
-
-        operation.Status = status;
-
-        await _wmsDbContext.SaveChangesAsync();
-
-        SetupUserExists(_workerId);
+        var operation = await CreateOperationWithStatus(status: status);
 
         var result = await _service.CancelWarehouseOperationAsync(
             _workerId,

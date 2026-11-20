@@ -41,5 +41,16 @@
             CreatedById = createdById;
             OperationNumber = $"{GetTypePrefix(type)}-{Id}";
         }
+
+        public WarehouseOperation(WarehouseOperationType type, WarehouseOperationStatus status, Ulid createdById, Ulid assignedToId)
+        {
+            Id = Ulid.NewUlid();
+            Type = type;
+            Status = status;
+            AssignedToId = assignedToId;
+            CreatedAt = DateTime.UtcNow;
+            CreatedById = createdById;
+            OperationNumber = $"{GetTypePrefix(type)}-{Id}";
+        }
     }
 }
