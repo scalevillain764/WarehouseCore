@@ -96,6 +96,7 @@ public class WarehouseOperationItemsUnitTests : MyIAsyncLifetime
         await _wmsDbContext.SaveChangesAsync(CancellationToken.None);
         return user;
     }
+     
     private async Task<Warehouse> AddWarehouse(Ulid companyId)
     {
         var warehouse = new Warehouse(
@@ -209,7 +210,7 @@ public class WarehouseOperationItemsUnitTests : MyIAsyncLifetime
         _validatorMock
             .Setup(x => x.EnsureUserHasAnyRoleAsync(
                 _wmsDbContext, currentUser.Id, "Only admins and managers can create warehouse operation item",
-            new List<UserType> { UserType.Admin, UserType.Manager }, CancellationToken.None))
+                    new List<UserType> { UserType.Admin, UserType.Manager }, CancellationToken.None))
             .ReturnsAsync(Result<User>.Success(new User("user_example", company.Id)));
 
         var result = await _service.CreateWarehouseOperationItemAsync(_userId,

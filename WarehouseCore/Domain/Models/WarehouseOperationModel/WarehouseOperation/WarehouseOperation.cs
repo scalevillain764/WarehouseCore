@@ -12,11 +12,11 @@
         public User? CreatedBy { get; set; } = null!;
         public Ulid AssignedToId { get; set; }
         public User? AssignedTo { get; set; } = null;
-        public ICollection<WarehouseOperationItem> Items { get; set; } = [];
+        public ICollection<WarehouseOperationItem> Items { get; set; } = new List<WarehouseOperationItem>();
 
         private WarehouseOperation()
         {
-            Items = [];
+            Items = new List<WarehouseOperationItem>();
         }
 
         private string GetTypePrefix(WarehouseOperationType type)
