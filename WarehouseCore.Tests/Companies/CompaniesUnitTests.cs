@@ -66,7 +66,6 @@ public class CompaniesUnitTests : MyIAsyncLifetime
     }
 
     // Get current company
-
     [Fact]
     public async Task GetCurrentCompanyAsync_CompanyDoesntExist_ReturnFailure()
     {
