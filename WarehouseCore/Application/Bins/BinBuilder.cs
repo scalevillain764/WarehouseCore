@@ -32,11 +32,8 @@ namespace Application.Bins
                 .Where(x => x.WarehouseZoneId == request.zoneId)
                 .Where(x => x.Row == request.rowNumber)
                 .MaxAsync(x => (int?)x.Section, token);
-
-            if (lastSection is null)
-                return Result<IReadOnlyList<BinResponse>>.Fail(ErrorType.NotFound, "Row not found");
-
-            int newSection = lastSection.Value + 1;
+ 
+            int newSection = (lastSection ?? 0) + 1;
             var newBins = new List<Bin>();
 
             if(zone.Code.Length < 3)
