@@ -31,24 +31,13 @@ public class ZoneService : IZoneService
         if (!await _companyValidator.EnsureUserExistsAsync(context, userId, token))
             return Result<ZoneDetailsResponse>.Fail(ErrorType.NotFound, "User doesn't belong to company");
 
-        var zone = await context.Zones
+        var zoneResponse = await context.Zones
             .AsNoTracking()
-            .Select(x => new ZoneDetailsResponse
-                (
-                    x.Id,
-                    x.Name,
-                    x.Description,
-                    x.Code,
-                    x.Type.ToString(),
-                    x.IsActive,
-                    x.Warehouse.Name,
-                    x.Bins.Count()
-                ))
             .FirstOrDefaultAsync(x => x.Id == zoneId, token);
 
-        return zone is null
+        return zoneResponse is null
             ? Result<ZoneDetailsResponse>.Fail(ErrorType.NotFound, "Zone not found")
-            : Result<ZoneDetailsResponse>.Success(zone);
+            : Result<ZoneDetailsResponse>.Success(new ZoneDetailsResponse(zoneResponse));
     }
 
     public async Task<Result<ZoneDetailsResponse>> CreateZoneAsync(Ulid userId, CreateZoneRequest request, CancellationToken token)
