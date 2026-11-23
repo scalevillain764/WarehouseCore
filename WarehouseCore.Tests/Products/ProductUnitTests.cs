@@ -468,10 +468,10 @@ public class ProductUnitTests : MyIAsyncLifetime
         var company = await AddCompany();
         SetNewCompanySettings(company.Id);
 
-        await AddProduct();
+        await AddProduct(120);
 
         var request = new GetProductsQueryRequest(
-            null, null, null, null, null, 120,
+            null, null, null, null, null, WeightPerUnit: 120,
             true, null, null, 1, 10);
 
         var result = await _productService.GetProductsByQuery(

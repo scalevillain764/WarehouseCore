@@ -44,7 +44,7 @@ public abstract class MyIAsyncLifetime : IAsyncLifetime
             "Black");
 
         _wmsDbContext.Products.Add(product);
-        await _wmsDbContext.SaveChangesAsync();
+        await _wmsDbContext.SaveChangesAsync(CancellationToken.None);
 
         return product;
     }

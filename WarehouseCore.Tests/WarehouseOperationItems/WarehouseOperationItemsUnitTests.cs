@@ -113,7 +113,7 @@ public class WarehouseOperationItemsUnitTests : MyIAsyncLifetime
         var warehouseOperation = await AddWarehouseOperation(WarehouseOperationType.Picking, _userId, worker.Id);
 
         SetNewCompanySettings(company.Id);
-        SetValidatorMockEnsureUserHasAnyRoleSuccess([UserType.Admin, UserType.Manager], company.Id);
+        SetValidatorMockEnsureUserHasAnyRoleFailure([UserType.Admin, UserType.Manager], company.Id, ErrorType.NotFound, "User not found");
 
         var result = await _service.CreateWarehouseOperationItemAsync(_userId,
             new CreateWarehouseOperationItemsRequest(warehouseOperation.Id, product.Id, 5, 5, sourceBin.Id, destinationBin.Id), CancellationToken.None);

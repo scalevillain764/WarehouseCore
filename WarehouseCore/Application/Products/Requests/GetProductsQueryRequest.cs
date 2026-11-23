@@ -13,5 +13,5 @@ public sealed record GetProductsQueryRequest(
     string? SKU,
     string? Color,
     int Page = 1,
-    int PageSize = 1
+    int PageSize = 10
     );
