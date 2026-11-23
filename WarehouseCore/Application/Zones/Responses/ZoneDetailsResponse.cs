@@ -11,5 +11,6 @@ public sealed record ZoneDetailsResponse(Ulid Id,
     string WarehouseName,
     int BinsCount)
 {
-    public ZoneDetailsResponse(WarehouseZone z) : this(z.Id, z.Name, z.Description, z.Code, z.Type.ToString(), z.IsActive, z.Warehouse!.Name, z.Bins.Count()) { }
+    public ZoneDetailsResponse(WarehouseZone z) : 
+        this(z.Id, z.Name, z.Description, z.Code, z.Type.ToString(), z.IsActive, z.Warehouse!.Name, z.Bins.Count()) { }
 }

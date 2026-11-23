@@ -7,6 +7,6 @@ public sealed record GetZonesQueryRequest(
         bool IsActive,
         string? Name,
         int Page = 1,
-        int PageSize = 1,
+        int PageSize = 10,
         int TotalCount = 1
     );

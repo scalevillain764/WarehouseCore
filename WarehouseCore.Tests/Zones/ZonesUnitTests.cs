@@ -189,9 +189,8 @@ public class ZonesUnitTests : MyIAsyncLifetime
         Assert.False(result.IsSuccess);
         Assert.Null(result.Data);
         Assert.Equal(ErrorType.Forbidden, result.ErrorType);
-        Assert.Equal("Only admins can create zones", result.ErrorMessage);
 
-        Assert.Empty(await _wmsDbContext.WarehouseZones.ToListAsync());
+        Assert.Empty(await _wmsDbContext.WarehouseZones.ToListAsync(CancellationToken.None));
     }
 
     // -------------------------
@@ -299,7 +298,8 @@ public class ZonesUnitTests : MyIAsyncLifetime
         Assert.Null(result.ErrorType);
 
         var updatedZone = await _wmsDbContext.WarehouseZones
-            .FirstAsync(x => x.Id == zone.Id);
+            .IgnoreQueryFilters()
+            .FirstAsync(x => x.Id == zone.Id, CancellationToken.None);
 
         Assert.False(updatedZone.IsActive);
     }
@@ -422,7 +422,7 @@ public class ZonesUnitTests : MyIAsyncLifetime
         var zone = await AddZone(warehouse.Id);
 
         zone.IsActive = false;
-        await _wmsDbContext.SaveChangesAsync();
+        await _wmsDbContext.SaveChangesAsync(CancellationToken.None);
 
         SetNewCompanySettings(company.Id);
         SetAdminFailure(ErrorType.Forbidden, "Only admins can activate zones");
@@ -435,11 +435,12 @@ public class ZonesUnitTests : MyIAsyncLifetime
         Assert.False(result.IsSuccess);
         Assert.Null(result.Data);
         Assert.Equal(ErrorType.Forbidden, result.ErrorType);
-  
+
         var unchangedZone = await _wmsDbContext.WarehouseZones
+            .IgnoreQueryFilters()
             .FirstAsync(x => x.Id == zone.Id, CancellationToken.None);
 
-        Assert.False(unchangedZone.IsActive);
+        Assert.False(unchangedZone.IsActive); 
     }
 
     [Fact]

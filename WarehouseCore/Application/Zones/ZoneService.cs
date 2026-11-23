@@ -33,6 +33,7 @@ public class ZoneService : IZoneService
 
         var zoneResponse = await context.Zones
             .AsNoTracking()
+            .Include(x => x.Warehouse)
             .FirstOrDefaultAsync(x => x.Id == zoneId, token);
 
         return zoneResponse is null
@@ -138,7 +139,7 @@ public class ZoneService : IZoneService
         if(query.Warehouses is not null && query.Warehouses.Count > 0)
         {
             queryable_zones = queryable_zones
-                .Where(z => query.Warehouses.Contains(z.Id));
+                .Where(z => query.Warehouses.Contains(z.WarehouseId));
         }
 
         if(query.Name is not null)
@@ -162,7 +163,8 @@ public class ZoneService : IZoneService
             if (!adminCheckRequest.IsSuccess)
                 return Result<PagedResponse<ZoneResponse>>.Fail((ErrorType)adminCheckRequest.ErrorType, adminCheckRequest.ErrorMessage);
 
-            queryable_zones = queryable_zones.IgnoreQueryFilters().Where(z => !z.IsActive);
+            queryable_zones = queryable_zones.IgnoreQueryFilters()
+                .Where(z => !z.IsActive);
         }
 
         int totalCount = await queryable_zones
