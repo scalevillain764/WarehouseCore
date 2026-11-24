@@ -28,4 +28,5 @@ public class WarehouseOperationItemController : BaseController
         Ulid warehouseOperationId,
         Ulid warehouseOperationItemId,
         CancellationToken token)
-        => ProcessResult(await _warehouseOperationItemService.RemoveWarehouseOperationItem(current
+        => ProcessResult(await _warehouseOperationItemService.RemoveWarehouseOperationItem(currentUserId, warehouseOperationId, warehouseOperationItemId, token));
+}
