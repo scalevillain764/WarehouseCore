@@ -8,6 +8,7 @@ namespace Domain.Models
         public string FirstName { get; set; }
         public string SecondName { get; set; }
         public string Email { get; set; }
+        public string Login { get; set; }
         public string? PasswordHash { get; set; }
         public string? RefreshTokenHash { get; set; }
         public DateTime? RefreshTokenExpiersAt { get; set; }
@@ -24,6 +25,7 @@ namespace Domain.Models
             SecondName = string.Empty;
             Type = UserType.Admin;
             Email = string.Empty;
+            Login = string.Empty;
             PasswordHash = string.Empty;
             RefreshTokenHash = string.Empty;
             RefreshTokenExpiersAt = null;
@@ -36,6 +38,7 @@ namespace Domain.Models
             FirstName = firstName;
             SecondName = string.Empty;
             Type = type;
+            Login = string.Empty;
             Email = string.Empty;
             PasswordHash = string.Empty;
             RefreshTokenHash = string.Empty;
@@ -43,17 +46,36 @@ namespace Domain.Models
         }
 
         // Main
-        public User(UserType type, string firstName, string secondName, string email, string? passwordHash, string? refreshTokenHash, DateTime? refreshTokenExpiersAt, Ulid companyId)
+
+        // for first admin
+        public User(Ulid id, string firstName, string secondName, string login, string? passwordHash, Ulid companyId)
         {
-            Id = Ulid.NewUlid();
+            Id = id;
             CompanyId = companyId;
             FirstName = firstName;
             SecondName = secondName;
-            Type = type;
-            Email = email;
+            Login = login;
+            Type = UserType.Admin;
+            Email = string.Empty;
             PasswordHash = passwordHash;
-            RefreshTokenHash = refreshTokenHash;
-            RefreshTokenExpiersAt = refreshTokenExpiersAt;
+            RefreshTokenHash = string.Empty;
+            RefreshTokenExpiersAt = null;
+            CompanyId = companyId;
         }
+
+        public User(Ulid id, UserType type, string firstName, string secondName, string login, string? passwordHash, Ulid companyId)
+        {
+            Id = id;
+            Type = type;
+            FirstName = firstName;
+            SecondName = secondName;
+            Login = login;
+            PasswordHash = passwordHash;
+            RefreshTokenHash = string.Empty;
+            Email = string.Empty;
+            RefreshTokenExpiersAt = null;
+            CompanyId = companyId;
+        }
+
     }
 }

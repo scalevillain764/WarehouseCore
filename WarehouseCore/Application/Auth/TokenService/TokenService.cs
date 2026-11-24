@@ -49,7 +49,7 @@ public class TokenService : ITokenService
             .WriteToken(token);
     }
 
-    private string AppendCookiesAndGetAccessToken(User user, Ulid CompanyId)
+    public string AppendCookiesAndGetAccessToken(User user, Ulid CompanyId)
     {
         string accessToken = CreateAccessToken(user.Id, user.FirstName, CompanyId);
         string refreshToken = CreateRefreshToken();
