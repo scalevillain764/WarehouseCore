@@ -155,6 +155,9 @@ public class AuthService : IAuthService
             request.FirstName,
             request.SecondName);
 
+        if (string.IsNullOrWhiteSpace(login))
+            return Result<RegistrateUserResponse>.Fail(ErrorType.Validation, "Incorrect input data");
+
         if (await context.Users.AnyAsync(
             x => x.Login == login,
             token))

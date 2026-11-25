@@ -15,6 +15,9 @@ public static class WmsCallsignGenerator
 
     public static string Generate(string firstName, string lastName, string ulid)
     {
+        if (string.IsNullOrEmpty(firstName) || string.IsNullOrEmpty(lastName) || string.IsNullOrEmpty(ulid))
+            return string.Empty; 
+
         string fTranslit = Transliterate(firstName);
         string lTranslit = Transliterate(lastName);
 
