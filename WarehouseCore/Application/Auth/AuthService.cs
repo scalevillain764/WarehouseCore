@@ -39,12 +39,8 @@ public class AuthService : IAuthService
     }
 
     // Creating first admin for a newly registered company
-    private async Task<Result<RegistrateFirstAdminResponse>>
-        RegistrateFirstAdminAsync(
-            RegistrateFirstAdminRequest request,
-            CancellationToken token,
-            WmsDbContext context,
-            Ulid companyId)
+    private async Task<Result<RegistrateFirstAdminResponse>> RegistrateFirstAdminAsync(RegistrateFirstAdminRequest request, CancellationToken token,
+            WmsDbContext context, Ulid companyId)
     {
         if (await context.Users.AnyAsync(token))
         {
@@ -76,15 +72,11 @@ public class AuthService : IAuthService
 
         await context.SaveChangesAsync(token);
 
-        return Result<RegistrateFirstAdminResponse>.Success(
-            new RegistrateFirstAdminResponse(firstAdmin.Login, request.Password));
+        return Result<RegistrateFirstAdminResponse>.Success(new RegistrateFirstAdminResponse(firstAdmin.Login, request.Password));
     }
 
     // Registering a new company
-    public async Task<Result<RegistrateCompanyResponse>>
-        RegistrateCompanyAsync(
-            RegistrateCompanyRequest request,
-            CancellationToken token)
+    public async Task<Result<RegistrateCompanyResponse>> RegistrateCompanyAsync(RegistrateCompanyRequest request, CancellationToken token)
     {
         var builder = new NpgsqlCommandBuilder();
 
@@ -150,11 +142,7 @@ public class AuthService : IAuthService
     }
 
     // Registering an employee inside the current company
-    public async Task<Result<RegistrateUserResponse>>
-        RegistrateUserAsync(
-            RegistrateUserRequest request,
-            CancellationToken token,
-            Ulid companyId)
+    public async Task<Result<RegistrateUserResponse>> RegistrateUserAsync(RegistrateUserRequest request, CancellationToken token, Ulid companyId)
     {
         await using var context = await _dbFactory.GetContextAsync(
             companyId,
@@ -198,10 +186,7 @@ public class AuthService : IAuthService
     }
 
     // User login
-    public async Task<Result<LogInUserResponse>>
-        LogInUserAsync(
-            LogInUserRequest request,
-            CancellationToken token)
+    public async Task<Result<LogInUserResponse>> LogInUserAsync(LogInUserRequest request, CancellationToken token)
     {
         var company = await _registryContext.Companies
             .FirstOrDefaultAsync(
@@ -248,11 +233,7 @@ public class AuthService : IAuthService
     }
 
     // Refreshing access and refresh tokens
-    public async Task<Result<LogInUserResponse>>
-        RefreshAsync(
-            Ulid userId,
-            string companyCode,
-            CancellationToken token)
+    public async Task<Result<LogInUserResponse>> RefreshAsync(Ulid userId, string companyCode, CancellationToken token)
     {
         var existingRefreshToken =
             _httpContextAccessor.HttpContext?
